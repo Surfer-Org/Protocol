@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import CodeBlock from './CodeBlock';
 import { getCodeExamples } from "../helpers";
 import MonacoEditor from '@monaco-editor/react'
+import { deleteRun } from '../state/actions';
 
 const StatusIndicator = ({ status }) => {
   switch (status) {

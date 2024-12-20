@@ -28,6 +28,31 @@ export async function convertMboxToJson(
   return new Promise((resolve, reject) => {
     const readStream = fs.createReadStream(mboxFilePath);
 
+    const cleanEmailBody = (body: string | undefined): string => {
+      if (!body) return '';
+      return body
+        // Remove image links
+        .replace(/\[https?:\/\/[^\]]+\]/g, '')
+        // Remove URLs
+        .replace(/https?:\/\/\S+/g, '')
+        // Remove unicode control characters and null bytes
+        .replace(/[\u0000-\u001F\u007F-\u009F\u000f\u0007]/g, '')
+        // Remove HTML tags
+        .replace(/<[^>]*>/g, '')
+        // Remove CSS styles
+        .replace(/[^{]*\{[^}]*\}/g, '')
+        // Remove HTML entities
+        .replace(/&[a-z]+;/g, ' ')
+        // Remove HTML attributes
+        .replace(/\s*[a-zA-Z-]+=\"[^\"]*\"/g, '')
+        // Remove multiple spaces
+        .replace(/\s+/g, ' ')
+        // Replace all newlines with spaces
+        .replace(/\n/g, ' ')
+        // Remove leading/trailing whitespace
+        .trim();
+    };
+
     const data = {
       company,
       name,
@@ -42,10 +67,12 @@ export async function convertMboxToJson(
           const jsonMessage = {
             accountID: id,
             from: message.from?.text,
-            to: message.to?.text || message.to,
+            to: Array.isArray(message.to) 
+              ? message.to.map(t => t.text).join(', ')
+              : message.to?.text || '',
             subject: message.subject,
             timestamp: message.date,
-            body: message.text,
+            body: cleanEmailBody(message.text),
             added_to_db: new Date().toISOString(),
           };
 

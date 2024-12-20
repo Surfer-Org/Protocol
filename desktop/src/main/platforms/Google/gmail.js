@@ -7,6 +7,31 @@ const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
+function cleanEmailBody(body) {
+  if (!body) return '';
+  return body
+    // Remove image links
+    .replace(/\[https?:\/\/[^\]]+\]/g, '')
+    // Remove URLs
+    .replace(/https?:\/\/\S+/g, '')
+    // Remove unicode control characters and null bytes
+    .replace(/[\u0000-\u001F\u007F-\u009F\u000f\u0007]/g, '')
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Remove CSS styles
+    .replace(/[^{]*\{[^}]*\}/g, '')
+    // Remove HTML entities
+    .replace(/&[a-z]+;/g, ' ')
+    // Remove HTML attributes
+    .replace(/\s*[a-zA-Z-]+=\"[^\"]*\"/g, '')
+    // Remove multiple spaces
+    .replace(/\s+/g, ' ')
+    // Replace all newlines with spaces
+    .replace(/\n/g, ' ')
+    // Remove leading/trailing whitespace
+    .trim();
+}
+
 async function checkIfEmailExists(id, platformId, company, name, emailContent) {
   const userDataPath = await ipcRenderer.invoke('get-user-data-path');
   const gmailPath = path.join(
@@ -238,7 +263,7 @@ else {
               .join(':')
               .trim(),
           ).toISOString() || null,
-        body: email.innerText || '',
+        body: cleanEmailBody(email.innerText) || '',
       };
 
       const emailExists = await checkIfEmailExists(id, platformId, company, name, emailJSON);

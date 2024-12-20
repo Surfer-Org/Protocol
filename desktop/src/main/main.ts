@@ -709,8 +709,6 @@ export const createWindow = async (visible: boolean = true) => {
                   });
                 }
               }
-              // ... existing code ...
-              // ... existing code ...
               else if (
                 url.includes(
                   'proddatamgmtqueue.blob.core.windows.net/exportcontainer/',
