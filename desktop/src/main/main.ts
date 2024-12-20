@@ -496,6 +496,7 @@ export const createWindow = async (visible: boolean = true) => {
         details.url.includes(
           'https://proddatamgmtqueue.blob.core.windows.net/exportcontainer/',
         ) ||
+        details.url.includes('https://chatgpt.com/backend-api/content') ||
         details.url.includes('file.notion.so')
       ) {
         console.log('ALLOWING THIS URL: ', details.url);
@@ -569,7 +570,8 @@ export const createWindow = async (visible: boolean = true) => {
         platformId = `notion-001`;
         idPath = path.join(platformPath, `${platformId}-${timestamp}`);
       } else if (
-        url.includes('proddatamgmtqueue.blob.core.windows.net/exportcontainer/')
+        url.includes('proddatamgmtqueue.blob.core.windows.net/exportcontainer/') ||
+        url.includes('https://chatgpt.com/backend-api/content')
       ) {
         companyPath = path.join(surferDataPath, 'OpenAI');
         platformPath = path.join(companyPath, 'ChatGPT');
@@ -712,7 +714,8 @@ export const createWindow = async (visible: boolean = true) => {
               else if (
                 url.includes(
                   'proddatamgmtqueue.blob.core.windows.net/exportcontainer/',
-                )
+                ) ||
+                url.includes('https://chatgpt.com/backend-api/content')
               ) {
                 try {
                   const outputPath = parseChatGPTConversations(
