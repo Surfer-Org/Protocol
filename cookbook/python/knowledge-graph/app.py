@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 surfer_client = SurferClient()
-data = surfer_client.get('bookmarks-001')
+data = surfer_client.get('platform-001')
 
 # Initialize both NetworkX and Pyvis graphs
 G = nx.Graph()

@@ -1,0 +1,4 @@
+networkx
+matplotlib
+pyvis
+surfer-protocol
