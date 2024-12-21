@@ -52,7 +52,7 @@ export function getFilesInFolder(folderPath: string) {
   return files;
 }
 
-export async function checkPythonAvailability(): Promise<string | null> {
+export async function checkPythonAvailability(on_startup: boolean = false, action: string = 'this action'): Promise<string | null> {
   const commands = process.platform === 'win32' 
     ? ['python', 'py'] 
     : ['python3', 'python'];
@@ -68,11 +68,19 @@ export async function checkPythonAvailability(): Promise<string | null> {
   }
   
   // Show error dialog if no Python version is found
-  await dialog.showMessageBox({
-    type: 'error',
-    title: 'Python Required for iMessage Export',
-    message: 'Python is required for iMessage export. Please go to https://www.python.org/downloads/ and install Python 3.10 or later.',
-  });
-  
-  return null;
+  if (on_startup) {
+    await dialog.showMessageBox({
+      type: 'error',
+      title: 'Some features require Python',
+      message: 'Python is required for iMessage export, local vectorization, and more. Please go to https://www.python.org/downloads/ and install Python 3.10 or later.',
+    });
+  }
+
+  else {
+    await dialog.showMessageBox({
+      type: 'error',
+      title: 'Python Required for this action',
+      message: `Python is required for ${action}. Please go to https://www.python.org/downloads/ and install Python 3.10 or later.`,
+    });
+  }
 } 

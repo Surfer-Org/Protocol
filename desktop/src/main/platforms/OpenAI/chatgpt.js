@@ -125,7 +125,7 @@ async function exportChatgpt(id, platformId, filename, company, name) {
       customConsoleLog(id, `Waiting for Download button`);
       downloadBtns = await waitForElement(
         id,
-        'a[href*="https://proddatamgmtqueue.blob.core.windows.net/exportcontainer/"]',
+        'a[href*="https://proddatamgmtqueue.blob.core.windows.net/exportcontainer/"], a[href*="https://chatgpt.com/backend-api/content"]',
         'Download button',
         true,
       );

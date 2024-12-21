@@ -1,5 +1,5 @@
 import asyncio
-
+import os
 from mcp.server.models import InitializationOptions
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
@@ -7,8 +7,34 @@ from pydantic import AnyUrl
 import mcp.server.stdio
 import requests
 import json
+import chromadb
+from chromadb.utils import embedding_functions
 
-# Store notes as a simple key-value dict to demonstrate state management
+embedding_function = embedding_functions.DefaultEmbeddingFunction
+
+user_data_path = os.path.expanduser("~/Library/Application Support/Electron")
+
+persistent_dir = os.path.join(user_data_path, "vector_db")
+if not os.path.exists(persistent_dir):
+    os.makedirs(persistent_dir)
+
+client = chromadb.PersistentClient(path=persistent_dir)
+
+collection_name = "surfer_collection"
+existing_collections = client.list_collections()
+collection_exists = any(coll.name == collection_name for coll in existing_collections)
+
+if not collection_exists:
+    collection = client.create_collection(
+        name=collection_name,
+        metadata={"description": "Main collection for Surfer data"}
+    )
+else:
+    collection = client.get_collection(collection_name)
+
+existing_chunks = collection.get()
+names_array = list(set(chunk['name'] for chunk in existing_chunks['metadatas']))
+
 notes: dict[str, str] = {}
 
 server = Server("surfer_mcp")
@@ -104,7 +130,7 @@ async def handle_list_tools() -> list[types.Tool]:
     return [
         types.Tool(
             name="search",
-            description="Semantic search over data from Surfer. The options for platform are 'iMessage', 'LinkedIn Connections', 'Twitter Bookmarks', 'Gmail', 'Notion', and 'ChatGPT'. Only use the platform that corresponds to the data you are searching over.",
+            description="Semantic search over data from Surfer. The options for platform are the following: " + ", ".join(names_array) + ". Only use the platform that corresponds to the data you are searching over.",
 
             inputSchema={
                 "type": "object",

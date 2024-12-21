@@ -125,7 +125,7 @@ export async function getImessageData(
       );
 
       // Rest of your Windows logic here
-      const pythonCommand = await checkPythonAvailability();
+      const pythonCommand = await checkPythonAvailability(false, 'iMessage export');
       if (!pythonCommand) return null;
 
       const requirementsPath = getAssetPath('imessage_windows_reqs.txt');
@@ -255,7 +255,7 @@ export async function getImessageData(
   //Use native ts for macOS
   else if (process.platform === 'darwin') {
     try {
-      const pythonCommand = await checkPythonAvailability();
+      const pythonCommand = await checkPythonAvailability(false, 'iMessage export');
       if (!pythonCommand) return null;
 
       const scriptPath = getAssetPath('imessage_mac.py');

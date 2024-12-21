@@ -173,6 +173,11 @@ useEffect(() => {
     setCurrentPage(1);
   };
 
+  const getCurrentDB = async () => {
+    const currentDB = await window.electron.ipcRenderer.invoke('get-current-db');
+    console.log('currentDB: ', currentDB);
+  };
+
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
@@ -386,9 +391,9 @@ const vectorizeLastRun = async () => {
       setIsSearching(false);
     }
   };
-useEffect(() => {
-  // console.log('vectorizationProgress: ', vectorizationProgress);
-}, [vectorizationProgress]);
+// useEffect(() => {
+//   console.log('vectorizationProgress: ', vectorizationProgress);
+// }, [vectorizationProgress]);
 
   useEffect(() => {
     const handleVectorDBProgress = (progress) => {
@@ -416,6 +421,17 @@ useEffect(() => {
     window.electron.ipcRenderer.on('vector-db-progress', handleVectorDBProgress);
     return () => {
       window.electron.ipcRenderer.removeAllListeners('vector-db-progress');
+    };
+  }, [runs.length]);
+
+  useEffect(() => {
+    const handleVectorDBOutput = (output) => {
+      console.log('vectorDBOutput: ', output);
+    };
+
+    window.electron.ipcRenderer.on('vector-db-output', handleVectorDBOutput);
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('vector-db-output');
     };
   }, [runs.length]);
 
@@ -450,6 +466,8 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      {/* <Button className='cursor-pointer' onClick={getCurrentDB}>Get Current DB</Button> */}
 
       {/* <div className="mt-4 space-y-4">
         <div className="flex gap-2">

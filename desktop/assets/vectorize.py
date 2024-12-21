@@ -5,6 +5,8 @@ from chromadb.utils import embedding_functions
 import json
 import uuid
 import base64
+import time  # Add this at the top with other imports
+import traceback  # Add this import at the top
 
 embedding_function = embedding_functions.DefaultEmbeddingFunction
 
@@ -58,6 +60,10 @@ try:
     total_items = len(json_data['content'])
     print(f"progress:{platform_id}:0/{total_items}", flush=True)
     
+    total_chunks_overall = 0
+    added_chunks_overall = 0
+    start_time = time.time()
+    
     for index, obj in enumerate(json_data['content']):
         # Add validation for required keys
         if docs_key not in obj:
@@ -84,19 +90,49 @@ try:
         
         # Chunk the document content
         docs_key_chunks = [document_content[i:i+1000] for i in range(0, len(document_content), 1000)]
+        total_chunks = len(docs_key_chunks)
+        added_chunks = 0
+
+        # Get existing chunks once before the loop
+        existing_data = collection.get()
+        existing_docs = existing_data['documents']
+        existing_metadatas = existing_data['metadatas']
 
         for chunk in docs_key_chunks:
+            # Check if this chunk with the same metadata exists
+            is_duplicate = False
+            for existing_doc, existing_metadata in zip(existing_docs, existing_metadatas):
+                if (chunk == existing_doc and 
+                    existing_metadata.get('name') == metadata['name']):
+                    is_duplicate = True
+                    break
+            
+            if is_duplicate:
+                continue
+            
             collection.upsert(
                 documents=[chunk],
-                ids=[document_id],
-                metadatas=[metadata]  # Fix: Pass metadata as a list
+                ids=[str(uuid.uuid4())],  # Generate unique ID for each chunk
+                metadatas=[metadata]
             )
+            added_chunks += 1
         
+        total_chunks_overall += total_chunks
+        added_chunks_overall += added_chunks
+        
+        # print('Chunk: ', chunk)
+        # print('Metadata: ', metadata)
+        # print(f"Chunks for document {index}: {added_chunks} added out of {total_chunks} total", flush=True)
         print(f"progress:{platform_id}:{index + 1}/{total_items}", flush=True)
     
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    print(f"Total chunks processed: {added_chunks_overall} added out of {total_chunks_overall} total", flush=True)
+    print(f"Total processing time: {elapsed_time:.2f} seconds", flush=True)
     print(f"progress:{platform_id}:{total_items}/{total_items}", flush=True)
 
 except Exception as e:
-    print(f"Error initializing vector database: {str(e)}", file=sys.stderr)
-    print(f"Full error details:", str(e.__class__.__name__), str(e), file=sys.stderr)
+    print(f"Error initializing vector database: {str(e)}", file=sys.stderr, flush=True)
+    print(f"Traceback:", traceback.format_exc(), file=sys.stderr, flush=True)
     sys.exit(1)

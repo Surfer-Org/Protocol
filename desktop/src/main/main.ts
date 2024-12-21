@@ -12,7 +12,7 @@ import {
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import express from 'express';
+import express, { query } from 'express';
 import fs from 'fs';
 import path from 'path';
 import {} from '../../';
@@ -300,6 +300,49 @@ ipcMain.handle('check-connected-platforms', async (event, platforms) => {
   return checkConnectedPlatforms(platforms);
 });
 
+ipcMain.handle('get-current-db', async (event) => {
+  const scriptPath = getAssetPath('current_db.py');
+  const pythonPath = await checkPythonAvailability(false, 'current db');
+
+  if (!pythonPath) {
+    throw new Error('Python not found');
+  }
+
+  return new Promise((resolve, reject) => {
+    const currentDBProcess = spawn(pythonPath, [
+      `"${scriptPath}"`,
+      `"${app.getPath('userData')}"`,
+    ], {
+      shell: true,
+    });
+
+    let outputData = '';
+    let errorData = '';
+
+    currentDBProcess.stdout.on('data', (data) => {
+      outputData += data.toString();
+      console.log('outputData: ', outputData);
+    });
+
+    currentDBProcess.stderr.on('data', (data) => {
+      errorData += data.toString();
+      console.log('errorData: ', errorData);
+    });
+
+    currentDBProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          resolve(outputData);
+        } catch (e) {
+          reject(new Error('Failed to parse current db results'));
+        }
+      } else {
+        reject(new Error(errorData || 'Current DB failed'));
+      }
+    });
+  });
+});
+
 const getPlatforms = async () => {
   const platformsDir = app.isPackaged
     ? path.join(__dirname)
@@ -449,7 +492,7 @@ const getAssetPath = (...paths: string[]): string => {
 
 ipcMain.handle('vectorize-last-run', async () => {
   const scriptPath = getAssetPath('vectorize.py');
-  const pythonPath = await checkPythonAvailability();
+  const pythonPath = await checkPythonAvailability(false, 'vectorizing your data');
   mainWindow?.webContents.send('get-runs');
   const runsResponse: any = await new Promise((resolve) => {
     ipcMain.once('get-runs-response', (event, runs) => resolve(runs));
@@ -487,16 +530,23 @@ ipcMain.handle('vectorize-last-run', async () => {
       // Handle stdout (normal output)
       vectorDB.stdout.on('data', (data) => {
         const output = data.toString();
+        // console.log('output: ', output);
         
-        // Check if the output contains progress information
-        if (output.includes('progress:')) {
-          // Format: "progress:platformId:current/total"
-          const [_, platformId, progress] = output.trim().split(':');
-          const [current, total] = progress.split('/');
-          const formattedProgress = `${platformId}:${current}:${total}`;
-          mainWindow?.webContents.send('vector-db-progress', formattedProgress);
-        } else {
-          mainWindow?.webContents.send('vector-db-output', output);
+        // Split output into lines and process each line separately
+        const lines = output.split('\n');
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine) {  // Only process non-empty lines
+            if (trimmedLine.startsWith('progress:')) {
+              // Format: "progress:platformId:current/total"
+              const [_, platformId, progress] = trimmedLine.split(':');
+              const [current, total] = progress.split('/');
+              const formattedProgress = `${platformId}:${current}:${total}`;
+              mainWindow?.webContents.send('vector-db-progress', formattedProgress);
+            } else {
+              mainWindow?.webContents.send('vector-db-output', trimmedLine);
+            }
+          }
         }
       });
 
@@ -535,7 +585,7 @@ ipcMain.handle('search-vector-db', async (event, query, platform) => {
 
 async function searchVectorDB(query: string, platform: string) {
   const scriptPath = getAssetPath('search_vector_db.py');
-  const pythonPath = await checkPythonAvailability();
+  const pythonPath = await checkPythonAvailability(false, 'searching over your data');
 
   if (!pythonPath) {
     throw new Error('Python not found');
@@ -638,7 +688,8 @@ export const createWindow = async (visible: boolean = true) => {
         details.url.includes(
           'https://proddatamgmtqueue.blob.core.windows.net/exportcontainer/',
         ) ||
-        details.url.includes('file.notion.so')
+        details.url.includes('file.notion.so') ||
+        details.url.includes('https://chatgpt.com/backend-api/content')
       ) {
         console.log('ALLOWING THIS URL: ', details.url);
         return { action: 'allow' };
@@ -711,7 +762,8 @@ export const createWindow = async (visible: boolean = true) => {
         platformId = `notion-001`;
         idPath = path.join(platformPath, `${platformId}-${timestamp}`);
       } else if (
-        url.includes('proddatamgmtqueue.blob.core.windows.net/exportcontainer/')
+        url.includes('proddatamgmtqueue.blob.core.windows.net/exportcontainer/') ||
+        url.includes('https://chatgpt.com/backend-api/content')
       ) {
         companyPath = path.join(surferDataPath, 'OpenAI');
         platformPath = path.join(companyPath, 'ChatGPT');
@@ -854,7 +906,8 @@ export const createWindow = async (visible: boolean = true) => {
               else if (
                 url.includes(
                   'proddatamgmtqueue.blob.core.windows.net/exportcontainer/',
-                )
+                ) ||
+                url.includes('https://chatgpt.com/backend-api/content')
               ) {
                 try {
                   const outputPath = parseChatGPTConversations(
