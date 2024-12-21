@@ -126,14 +126,14 @@ const IconButton = styled.button`
       props.disabled ? 'transparent' : '#ffffff1a'};
   }
 `;
-interface WebviewManagerProps {
+interface WebviewProps {
   webviewRefs: { [key: string]: React.RefObject<HTMLIFrameElement> };
   getWebviewRef: (runId: string) => React.RefObject<HTMLIFrameElement>;
 }
 
 import { debounce } from 'lodash'; // Make sure to import debounce from lodash
 
-const WebviewManager: React.FC<WebviewManagerProps> = ({
+const Webview: React.FC<WebviewProps> = ({
   webviewRefs,
   getWebviewRef,
 }) => {
@@ -518,4 +518,4 @@ const WebviewManager: React.FC<WebviewManagerProps> = ({
   );
 };
 
-export default WebviewManager;
+export default Webview;

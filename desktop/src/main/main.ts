@@ -36,7 +36,7 @@ import { resolveHtmlPath } from './helpers/util';
 import { spawn } from 'child_process';
 dotenv.config();
 const { download } = require('electron-dl');
-import { checkPythonAvailability } from './helpers/util';
+import { checkPythonAvailability, checkAndInstallPythonRequirements } from './helpers/util';
 
 // Preventing multiple instances of Surfer
 
@@ -486,7 +486,7 @@ const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, 'assets')
   : path.join(__dirname, '../../assets');
 
-const getAssetPath = (...paths: string[]): string => {
+export const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
@@ -1334,6 +1334,9 @@ app
         }
       });
     }
+
+    // Check and install Python requirements
+    await checkAndInstallPythonRequirements();
   })
   .catch(console.log);
 

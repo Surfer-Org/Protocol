@@ -10,6 +10,7 @@ import { dialog } from 'electron';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 const execAsync = promisify(exec);
+import { getAssetPath } from '../main';
 
 export function resolveHtmlPath(htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
@@ -74,13 +75,58 @@ export async function checkPythonAvailability(on_startup: boolean = false, actio
       title: 'Some features require Python',
       message: 'Python is required for iMessage export, local vectorization, and more. Please go to https://www.python.org/downloads/ and install Python 3.10 or later.',
     });
-  }
-
-  else {
+  } else {
     await dialog.showMessageBox({
       type: 'error',
       title: 'Python Required for this action',
       message: `Python is required for ${action}. Please go to https://www.python.org/downloads/ and install Python 3.10 or later.`,
     });
   }
-} 
+  return null;
+}
+
+export async function checkAndInstallPythonRequirements(): Promise<boolean> {
+  const pythonCmd = await checkPythonAvailability(true);
+  if (!pythonCmd) return false;
+
+  try {
+    // First check if pip is installed
+    await execAsync(`${pythonCmd} -m pip --version`);
+    
+    // Get the requirements.txt path
+    const requirementsPath = getAssetPath('requirements.txt');
+    
+    // Read requirements file
+    const requirements = fs.readFileSync(requirementsPath, 'utf8').split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#')); // Remove empty lines and comments
+    
+    // Check each package
+    for (const pkg of requirements) {
+      try {
+        // Try to import the package using python
+        await execAsync(`${pythonCmd} -c "import ${pkg.split('==')[0].trim()}"`);
+        console.log(`Package ${pkg} is already installed`);
+      } catch (error) {
+        // Package not found, install it
+        console.log(`Installing package ${pkg}...`);
+        const { stdout, stderr } = await execAsync(
+          `${pythonCmd} -m pip install ${pkg}`
+        );
+        
+        console.log('Installation output:', stdout);
+        if (stderr) console.error('Installation errors:', stderr);
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error checking/installing Python requirements:', error);
+    await dialog.showMessageBox({
+      type: 'error',
+      title: 'Error Installing Python Requirements',
+      message: 'Failed to install required Python packages. Please make sure pip is installed and try again.',
+    });
+    return false;
+  }
+}

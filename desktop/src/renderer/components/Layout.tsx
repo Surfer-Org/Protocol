@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
-import WebviewManager from './WebviewManager';
+import Webview from './Webview';
 
 interface LayoutProps {
   webviewRefs: { [key: string]: React.RefObject<HTMLWebViewElement> };
@@ -33,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({
         >
           <div className="absolute inset-0 w-full h-full">
             {children}
-            <WebviewManager
+            <Webview
               webviewRefs={webviewRefs}
               getWebviewRef={getWebviewRef}
             />
