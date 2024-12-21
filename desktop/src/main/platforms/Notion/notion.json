@@ -3,5 +3,8 @@
     "description": "Exports your entire workspace.",
     "connectURL": "https://www.notion.so/login",
     "connectSelector": ".notion-sidebar-switcher",
-    "exportFrequency": "daily"
+    "exportFrequency": "daily",
+    "vectorize_config": {
+        "documents": "text"
+    }
 }

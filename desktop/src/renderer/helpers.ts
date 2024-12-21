@@ -38,6 +38,8 @@ export const formatExportSize = (sizeInBits: number) => {
   return `${formattedSize} ${units[unitIndex]}`;
 };
 
+
+
 export const getCodeExamples = async (run: any) => {
   const fetchGithubFile = async (path: string) => {
     const response = await fetch(
@@ -48,7 +50,6 @@ export const getCodeExamples = async (run: any) => {
 
   const claudePath = 'cookbook/python/claude-mcp/README.md';
   const claudeCode = await fetchGithubFile(claudePath);
-  console.log(claudeCode);
 
   const dashboardPath = 'cookbook/python/streamlit-chatbot/app.py';
   const dashboardCode = await fetchGithubFile(dashboardPath);

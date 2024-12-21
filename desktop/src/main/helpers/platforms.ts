@@ -278,4 +278,3 @@ export function parseChatGPTConversations(extractPath: string, platformId: strin
 
   return outputPath;
 }
-

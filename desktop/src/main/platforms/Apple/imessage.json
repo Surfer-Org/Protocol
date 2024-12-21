@@ -1,5 +1,8 @@
 {
     "name": "iMessage",
     "description": "Exports all your iMessages.",
-    "needsConnection": false
+    "needsConnection": false,
+    "vectorize_config": {
+        "documents": "text"
+    }
 }

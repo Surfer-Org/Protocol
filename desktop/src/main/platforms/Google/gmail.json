@@ -4,5 +4,8 @@
     "isUpdated": true,
     "connectURL": "https://takeout.google.com/u/0/settings/takeout/custom/gmail",
     "connectSelector": "button[aria-label='Next step']",
-    "exportFrequency": "hourly"
+    "exportFrequency": "hourly",
+    "vectorize_config": {
+        "documents": "body"
+    }
 }

@@ -5,5 +5,8 @@
     "isUpdated": true,
     "connectURL": "https://twitter.com",
     "connectSelector": "img.css-9pa8cd",
-    "exportFrequency": "daily"
+    "exportFrequency": "daily",
+    "vectorize_config": {
+        "documents": "text"
+    }
 }

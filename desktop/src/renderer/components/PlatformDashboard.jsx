@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { startRun, toggleRunVisibility, setExportRunning, updateExportStatus, addRun } from '../state/actions';
+import { startRun, toggleRunVisibility, setExportRunning } from '../state/actions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
-import { ArrowUpRight, Check, X, Link, Search, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { ArrowUpRight, Check, X, Link, Search, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
 import { Input } from "./ui/input";
 import RunDetails from './RunDetails';
 import ConfettiExplosion from 'react-confetti-explosion';
@@ -12,6 +12,7 @@ import { formatLastRunTime} from '../helpers';
 import { MoonLoader } from 'react-spinners';
 import { IoSync } from "react-icons/io5";
 import { useToast } from "./ui/use-toast";
+import { Progress } from './ui/progress'
 
 const PlatformDashboard = ({ onPlatformClick, webviewRef }) => {
   const dispatch = useDispatch();
@@ -28,6 +29,11 @@ const PlatformDashboard = ({ onPlatformClick, webviewRef }) => {
   const [filteredPlatforms, setFilteredPlatforms] = useState([]);
   const [allPlatforms, setAllPlatforms] = useState([]);
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isVectorizing, setIsVectorizing] = useState(false);
+  const [vectorizationProgress, setVectorizationProgress] = useState({});
 
 
 useEffect(() => {
@@ -167,6 +173,11 @@ useEffect(() => {
     setCurrentPage(1);
   };
 
+  const getCurrentDB = async () => {
+    const currentDB = await window.electron.ipcRenderer.invoke('get-current-db');
+    console.log('currentDB: ', currentDB);
+  };
+
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
@@ -187,7 +198,8 @@ useEffect(() => {
       status: 'running',
       isUpdated: platform.isUpdated,
       exportSize: null, 
-      url: 'about:blank'
+      url: 'about:blank',
+      vectorize_config: platform.vectorize_config
     }; 
 
 
@@ -240,9 +252,6 @@ useEffect(() => {
     return runs.some(run => run.platformId === platformId && run.status === 'running');
   }, [runs]);
 
-  const handleCloseDetails = () => {
-    setSelectedRun(null);
-  };
 
 const renderRunStatus = (platform) => {
   const latestRun = getLatestRun(platform.id);
@@ -314,6 +323,28 @@ const renderRunStatus = (platform) => {
   }
 };
 
+const vectorizeLastRun = async () => {
+  setIsVectorizing(true);
+  try {
+    const response = await window.electron.ipcRenderer.invoke('vectorize-last-run');
+    console.log('vectorizeLastRun response: ', response);
+    toast({
+      title: 'Vectorization Complete',
+      description: 'The last run has been successfully vectorized',
+    });
+    setVectorizationProgress({});
+  } catch (error) {
+    console.error('Vectorization failed:', error);
+    toast({
+      title: 'Vectorization Failed',
+      description: 'Failed to vectorize the last run',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsVectorizing(false);
+  }
+};
+
   useEffect(() => {
     const logContainers = document.querySelectorAll('#log-container');
     if (logContainers) {
@@ -346,6 +377,64 @@ const renderRunStatus = (platform) => {
     }, {});
   }, [runs]);
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const results = await window.electron.ipcRenderer.invoke('search-vector-db', searchQuery);
+      console.log('results: ', results);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+// useEffect(() => {
+//   console.log('vectorizationProgress: ', vectorizationProgress);
+// }, [vectorizationProgress]);
+
+  useEffect(() => {
+    const handleVectorDBProgress = (progress) => {
+      const [platformId, current, total] = progress.split(':');
+      
+      if (parseInt(current) === parseInt(total)) {
+        setVectorizationProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[platformId];
+          return newProgress;
+        });
+        return;
+      }
+
+      setVectorizationProgress(prev => ({
+        ...prev,
+        [platformId]: {
+          current: parseInt(current),
+          total: parseInt(total),
+          percentage: Math.round((parseInt(current) / parseInt(total)) * 100)
+        }
+      }));
+    };
+
+    window.electron.ipcRenderer.on('vector-db-progress', handleVectorDBProgress);
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('vector-db-progress');
+    };
+  }, [runs.length]);
+
+  useEffect(() => {
+    const handleVectorDBOutput = (output) => {
+      console.log('vectorDBOutput: ', output);
+    };
+
+    window.electron.ipcRenderer.on('vector-db-output', handleVectorDBOutput);
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('vector-db-output');
+    };
+  }, [runs.length]);
+
   return (
     <div className="w-full h-full flex-col px-[50px] pt-6 pb-6 select-none">
       <div className="flex-shrink-0 mb-4">
@@ -377,6 +466,53 @@ const renderRunStatus = (platform) => {
           </div>
         </div>
       </div>
+
+      {/* <Button className='cursor-pointer' onClick={getCurrentDB}>Get Current DB</Button> */}
+
+      {/* <div className="mt-4 space-y-4">
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Search vector database..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button 
+            variant="outline" 
+            onClick={handleSearch}
+            disabled={isSearching}
+          >
+            {isSearching ? 'Searching...' : 'Search'}
+          </Button>
+        </div>
+        
+        {searchResults && (
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold mb-2">Search Results</h3>
+            <div className="space-y-2">
+              {searchResults.documents.map((doc, index) => (
+                <div key={searchResults.ids[index]} className="p-4 border rounded-lg">
+                  <div className="text-sm text-gray-500 mb-1">
+                    Score: {(1 - searchResults.distances[index]).toFixed(4)}
+                  </div>
+                  <div>{doc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div> */}
+
+
+      {/* <Button className='mb-2 mt-2' variant="outline" size="sm" onClick={vectorizeLastRun} disabled={isVectorizing}>
+        <IoSync 
+          size={16} 
+          className={`mr-2 ${isVectorizing ? 'animate-spin' : ''}`}
+        />
+        {isVectorizing ? 'Vectorizing...' : 'Vectorize Last Run'}
+      </Button> */}
+      
       {paginatedPlatforms.length > 0 ? (
         <div className="flex flex-col flex-grow overflow-hidden">
           <div className="overflow-x-auto overflow-y-hidden">
@@ -388,6 +524,7 @@ const renderRunStatus = (platform) => {
                     <TableHead></TableHead>
                     <TableHead>Latest Run</TableHead>
                     <TableHead>Actions</TableHead>
+                    {Object.keys(vectorizationProgress).length > 0 && <TableHead>Vectorization Progress</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -452,6 +589,21 @@ const renderRunStatus = (platform) => {
                           )}
                         </div>
                       </TableCell>
+                      {Object.keys(vectorizationProgress).length > 0 && <TableCell>
+                        {vectorizationProgress[platform.id] ? (
+                          <div className="flex items-center gap-2">
+                            <Progress 
+                              value={vectorizationProgress[platform.id].percentage} 
+                              className="w-[100px]"
+                            />
+                            <span className="text-sm text-gray-500">
+                              {vectorizationProgress[platform.id].percentage}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">N/A</span>
+                        )}
+                      </TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>

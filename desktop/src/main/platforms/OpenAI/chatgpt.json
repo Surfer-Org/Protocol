@@ -3,5 +3,9 @@
     "description": "Exports your entire ChatGPT history.",
     "connectURL": "https://chat.openai.com",
     "connectSelector": "img[alt='User']",
-    "exportFrequency": "daily"
+    "exportFrequency": "daily",
+    "vectorize_config": {
+        "documents": "title"
+    }
+    
 }

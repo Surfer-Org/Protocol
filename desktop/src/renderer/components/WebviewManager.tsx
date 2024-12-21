@@ -293,6 +293,9 @@ const WebviewManager: React.FC<WebviewManagerProps> = ({
 
         dispatch(updateExportStatus(company, name, runID.toString(), folderPath, exportSize));
        }
+       // start vectorization here!!!
+       const vectorization_response = await window.electron.ipcRenderer.invoke('vectorize-last-run', runID.toString());
+       console.log('vectorization_response: ', vectorization_response);
 
     };
 
@@ -434,6 +437,7 @@ const WebviewManager: React.FC<WebviewManagerProps> = ({
       });
     };
   }, [runs.length]);
+
 
   return (
     <FullScreenOverlay isVisible={isRunLayerVisible}>

@@ -1,0 +1,21 @@
+[project]
+name = "surfer-mcp"
+version = "0.1.0"
+description = "This is the MCP server for Surfer that connects to the Claude Desktop App"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+ "chromadb>=0.5.23",
+ "mcp>=1.1.2",
+ "requests",
+]
+[[project.authors]]
+name = "Sahil Lalani"
+email = "99920148+sahil-lalani@users.noreply.github.com"
+
+[build-system]
+requires = [ "hatchling",]
+build-backend = "hatchling.build"
+
+[project.scripts]
+surfer-mcp = "surfer_mcp:main"

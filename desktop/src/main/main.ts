@@ -12,7 +12,7 @@ import {
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import express from 'express';
+import express, { query } from 'express';
 import fs from 'fs';
 import path from 'path';
 import {} from '../../';
@@ -33,8 +33,10 @@ import {
   getTwitterCredentials,
 } from './helpers/network';
 import { resolveHtmlPath } from './helpers/util';
+import { spawn } from 'child_process';
 dotenv.config();
 const { download } = require('electron-dl');
+import { checkPythonAvailability } from './helpers/util';
 
 // Preventing multiple instances of Surfer
 
@@ -201,6 +203,14 @@ const setupExpressServer = async () => {
     }
   });
 
+  expressApp.get('/api/search/:query/:platform', async (req, res) => {
+    console.log('Search request: ', req.params);
+    const { query, platform } = req.params;
+    const searchResponse = await searchVectorDB(query, platform);
+    console.log('Search response: ', searchResponse);
+    res.json({ success: true, data: searchResponse });
+  });
+
   expressApp
     .listen(port, () => {
       console.log(`Server is running on port ${port}`);
@@ -290,6 +300,49 @@ ipcMain.handle('check-connected-platforms', async (event, platforms) => {
   return checkConnectedPlatforms(platforms);
 });
 
+ipcMain.handle('get-current-db', async (event) => {
+  const scriptPath = getAssetPath('current_db.py');
+  const pythonPath = await checkPythonAvailability(false, 'current db');
+
+  if (!pythonPath) {
+    throw new Error('Python not found');
+  }
+
+  return new Promise((resolve, reject) => {
+    const currentDBProcess = spawn(pythonPath, [
+      `"${scriptPath}"`,
+      `"${app.getPath('userData')}"`,
+    ], {
+      shell: true,
+    });
+
+    let outputData = '';
+    let errorData = '';
+
+    currentDBProcess.stdout.on('data', (data) => {
+      outputData += data.toString();
+      console.log('outputData: ', outputData);
+    });
+
+    currentDBProcess.stderr.on('data', (data) => {
+      errorData += data.toString();
+      console.log('errorData: ', errorData);
+    });
+
+    currentDBProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          resolve(outputData);
+        } catch (e) {
+          reject(new Error('Failed to parse current db results'));
+        }
+      } else {
+        reject(new Error(errorData || 'Current DB failed'));
+      }
+    });
+  });
+});
+
 const getPlatforms = async () => {
   const platformsDir = app.isPackaged
     ? path.join(__dirname)
@@ -366,6 +419,7 @@ const getPlatforms = async () => {
           connectURL: metadata.connectURL || null,
           connectSelector: metadata.connectSelector || null,
           exportFrequency: metadata.exportFrequency || null,
+          vectorize_config: metadata.vectorize_config || null,
         };
       }),
     );
@@ -436,6 +490,144 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
+ipcMain.handle('vectorize-last-run', async () => {
+  const scriptPath = getAssetPath('vectorize.py');
+  const pythonPath = await checkPythonAvailability(false, 'vectorizing your data');
+  mainWindow?.webContents.send('get-runs');
+  const runsResponse: any = await new Promise((resolve) => {
+    ipcMain.once('get-runs-response', (event, runs) => resolve(runs));
+  });
+
+  // Filter runs for this platform with successful status
+  const successfulRuns = runsResponse.filter(
+    (r: any) => r.status === 'success',
+  );
+
+  const latestRun = successfulRuns.sort(
+    (a: any, b: any) =>
+      new Date(b.endDate || b.startDate).getTime() -
+      new Date(a.endDate || b.startDate).getTime(),
+  )[0];
+
+  const jsonFile = fs.readdirSync(latestRun.exportPath).filter(file => file.endsWith('.json'))[0];
+  const jsonFilePath = path.join(latestRun.exportPath, jsonFile);
+  console.log('jsonFilePath: ', jsonFilePath);
+  const parsedLatestRun = Buffer.from(JSON.stringify(latestRun)).toString('base64');
+
+  if (pythonPath) {
+    return new Promise((resolve, reject) => {
+      // Wrap paths in quotes to handle spaces
+      
+      const vectorDB = spawn(pythonPath, [
+        `"${scriptPath}"`, 
+        `"${app.getPath('userData')}"`,
+        `"${jsonFilePath}"`,
+        parsedLatestRun,
+      ], {
+        shell: true,
+      });
+
+      // Handle stdout (normal output)
+      vectorDB.stdout.on('data', (data) => {
+        const output = data.toString();
+        // console.log('output: ', output);
+        
+        // Split output into lines and process each line separately
+        const lines = output.split('\n');
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine) {  // Only process non-empty lines
+            if (trimmedLine.startsWith('progress:')) {
+              // Format: "progress:platformId:current/total"
+              const [_, platformId, progress] = trimmedLine.split(':');
+              const [current, total] = progress.split('/');
+              const formattedProgress = `${platformId}:${current}:${total}`;
+              mainWindow?.webContents.send('vector-db-progress', formattedProgress);
+            } else {
+              mainWindow?.webContents.send('vector-db-output', trimmedLine);
+            }
+          }
+        }
+      });
+
+      // Handle stderr (error output)
+      vectorDB.stderr.on('data', (data) => {
+        const error = data.toString();
+        console.error('Vector DB Error:', error);
+        mainWindow?.webContents.send('vector-db-error', error);
+      });
+
+      // Handle process completion
+      vectorDB.on('close', (code) => {
+        console.log(`Vector DB process exited with code ${code}`);
+        mainWindow?.webContents.send('vector-db-close', code);
+        if (code === 0) {
+          resolve({ success: true, code });
+        } else {
+          reject({ success: false, code });
+        }
+      });
+
+      // Handle errors
+      vectorDB.on('error', (error) => {
+        console.error('Vector DB Process Error:', error);
+        reject({ success: false, error: error.message });
+      });
+    });
+  } else {
+    throw new Error('Python not found');
+  }
+});
+
+ipcMain.handle('search-vector-db', async (event, query, platform) => {
+  return searchVectorDB(query, platform);
+});
+
+async function searchVectorDB(query: string, platform: string) {
+  const scriptPath = getAssetPath('search_vector_db.py');
+  const pythonPath = await checkPythonAvailability(false, 'searching over your data');
+
+  if (!pythonPath) {
+    throw new Error('Python not found');
+  }
+
+  return new Promise((resolve, reject) => {
+    const searchProcess = spawn(pythonPath, [
+      `"${scriptPath}"`,
+      `"${app.getPath('userData')}"`,
+      `"${query}"`,
+      `"${platform}"`
+    ], {
+      shell: true,
+    });
+
+    let outputData = '';
+    let errorData = '';
+
+    searchProcess.stdout.on('data', (data) => {
+      outputData += data.toString();
+    });
+
+    searchProcess.stderr.on('data', (data) => {
+      errorData += data.toString();
+    });
+
+    searchProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const results = JSON.parse(outputData);
+          resolve(results);
+        } catch (e) {
+          reject(new Error('Failed to parse search results'));
+        }
+      } else {
+        reject(new Error(errorData || 'Search failed'));
+      }
+    });
+  });
+}
+
+
 let isQuitting = false;
 
 export const createWindow = async (visible: boolean = true) => {
@@ -496,8 +688,8 @@ export const createWindow = async (visible: boolean = true) => {
         details.url.includes(
           'https://proddatamgmtqueue.blob.core.windows.net/exportcontainer/',
         ) ||
-        details.url.includes('https://chatgpt.com/backend-api/content') ||
-        details.url.includes('file.notion.so')
+        details.url.includes('file.notion.so') ||
+        details.url.includes('https://chatgpt.com/backend-api/content')
       ) {
         console.log('ALLOWING THIS URL: ', details.url);
         return { action: 'allow' };
