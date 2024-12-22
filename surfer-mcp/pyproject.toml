@@ -1,6 +1,6 @@
 [project]
 name = "surfer-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "This is the MCP server for Surfer that connects to the Claude Desktop App"
 readme = "README.md"
 requires-python = ">=3.13"

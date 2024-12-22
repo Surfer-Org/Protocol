@@ -178,7 +178,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="surfer-mcp",
-                server_version="0.1.0",
+                server_version="0.1.1",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

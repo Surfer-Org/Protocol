@@ -308,12 +308,15 @@ ipcMain.handle('get-current-db', async (event) => {
     throw new Error('Python not found');
   }
 
+  const args = [
+    scriptPath,
+    app.getPath('userData')
+  ];
+
   return new Promise((resolve, reject) => {
-    const currentDBProcess = spawn(pythonPath, [
-      `"${scriptPath}"`,
-      `"${app.getPath('userData')}"`,
-    ], {
-      shell: true,
+    const currentDBProcess = spawn(pythonPath, args, {
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let outputData = '';
