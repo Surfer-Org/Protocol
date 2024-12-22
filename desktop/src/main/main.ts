@@ -1278,22 +1278,10 @@ app
   .then(async () => {
     app.setAccessibilitySupportEnabled(true);
 
-    // Only set login items in production
-    if (app.isPackaged) {
-      app.setLoginItemSettings({
-        openAtLogin: true,
-        openAsHidden: true,
-        path: app.getPath('exe'),
-      });
-    }
+    // Start Python setup in background but don't await it
+    setupPythonEnvironment().catch(console.error);
 
-    // Set up Python environment before anything else
-    const pythonPath = await setupPythonEnvironment();
-    if (!pythonPath) {
-      console.error('Failed to set up Python environment');
-      // You might want to handle this case appropriately
-    }
-
+    // Continue with app startup
     await setupExpressServer();
     createWindow();
 

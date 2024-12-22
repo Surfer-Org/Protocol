@@ -14,6 +14,10 @@ import { getAssetPath } from '../main';
 import { execSync } from 'child_process';
 import { app } from 'electron';
 
+// Add a new variable to track Python setup status
+let pythonSetupPromise: Promise<string | null> | null = null;
+let pythonSetupComplete = false;
+
 export function resolveHtmlPath(htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
     const port = process.env.PORT || 1213;
@@ -56,8 +60,13 @@ export function getFilesInFolder(folderPath: string) {
 }
 
 export async function setupPythonEnvironment(): Promise<string | null> {
-  // Run the setup in the background
-  (async () => {
+  // If setup is already in progress, return the existing promise
+  if (pythonSetupPromise) {
+    return pythonSetupPromise;
+  }
+
+  // Create new setup promise
+  pythonSetupPromise = (async () => {
     const userData = app.getPath('userData');
     const venvPath = path.join(userData, 'venv');
     
@@ -133,6 +142,7 @@ export async function setupPythonEnvironment(): Promise<string | null> {
         : path.join(venvPath, 'bin', 'python');
       
       console.log('Using Python path:', finalPythonPath);
+      pythonSetupComplete = true;
       return finalPythonPath;
 
     } catch (error) {
@@ -153,17 +163,42 @@ export async function setupPythonEnvironment(): Promise<string | null> {
         title: 'Python Environment Setup Failed',
         message: `Failed to set up Python virtual environment: ${error.message}\nPlease make sure Python is installed correctly.`,
       });
+      pythonSetupComplete = false;
       return null;
     }
-  })().catch(console.error); // Handle any errors in the background process
+  })();
 
-  // Return immediately to not block app startup
-  return process.platform === 'win32'
-    ? path.join(app.getPath('userData'), 'venv', 'Scripts', 'python.exe')
-    : path.join(app.getPath('userData'), 'venv', 'bin', 'python');
+  return pythonSetupPromise;
+}
+
+// Add a new function to check if Python is ready
+export function isPythonReady(): boolean {
+  return pythonSetupComplete;
 }
 
 export async function checkPythonAvailability(on_startup: boolean = false, action: string = 'this action'): Promise<string | null> {
+  // If setup is in progress, wait for it to complete
+  if (pythonSetupPromise && !pythonSetupComplete) {
+    // Show "waiting" dialog
+    const waitingDialog = dialog.showMessageBox({
+      type: 'info',
+      title: 'Setting Up Python Environment',
+      message: 'Python environment is being set up. This may take a few minutes. The action will automatically continue once setup is complete.',
+      buttons: ['Cancel'],
+      defaultId: 0,
+      noLink: true,
+    });
+
+    try {
+      const pythonPath = await pythonSetupPromise;
+      if (pythonPath) {
+        return pythonPath;
+      }
+    } catch (error) {
+      console.error('Python setup failed:', error);
+    }
+  }
+
   // First check if we have a virtual environment
   const userData = app.getPath('userData');
   const venvPythonPath = process.platform === 'win32'
