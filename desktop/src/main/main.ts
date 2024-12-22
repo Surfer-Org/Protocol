@@ -516,15 +516,14 @@ ipcMain.handle('vectorize-last-run', async () => {
 
   if (pythonPath) {
     return new Promise((resolve, reject) => {
-      // Wrap paths in quotes to handle spaces
-      
       const vectorDB = spawn(pythonPath, [
-        `"${scriptPath}"`, 
-        `"${app.getPath('userData')}"`,
-        `"${jsonFilePath}"`,
-        parsedLatestRun,
+        scriptPath,
+        app.getPath('userData'),
+        jsonFilePath,
+        parsedLatestRun
       ], {
-        shell: true,
+        shell: false,
+        stdio: ['pipe', 'pipe', 'pipe']
       });
 
       // Handle stdout (normal output)
@@ -593,12 +592,13 @@ async function searchVectorDB(query: string, platform: string) {
 
   return new Promise((resolve, reject) => {
     const searchProcess = spawn(pythonPath, [
-      `"${scriptPath}"`,
-      `"${app.getPath('userData')}"`,
-      `"${query}"`,
-      `"${platform}"`
+      scriptPath,
+      app.getPath('userData'),
+      query,
+      platform
     ], {
-      shell: true,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let outputData = '';
@@ -610,19 +610,27 @@ async function searchVectorDB(query: string, platform: string) {
 
     searchProcess.stderr.on('data', (data) => {
       errorData += data.toString();
+      console.error('Python stderr:', errorData);
     });
 
     searchProcess.on('close', (code) => {
+      console.log('Search process exited with code:', code);
       if (code === 0) {
         try {
           const results = JSON.parse(outputData);
           resolve(results);
         } catch (e) {
+          console.error('Failed to parse results:', e);
           reject(new Error('Failed to parse search results'));
         }
       } else {
         reject(new Error(errorData || 'Search failed'));
       }
+    });
+
+    searchProcess.on('error', (error) => {
+      console.error('Spawn error:', error);
+      reject(new Error(`Failed to start search process: ${error.message}`));
     });
   });
 }

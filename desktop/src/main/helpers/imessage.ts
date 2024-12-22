@@ -178,14 +178,17 @@ export async function getImessageData(
               pythonCommand,
               [
                 scriptPath,
-                selectedFolder, // Use the selected folder path
+                selectedFolder,
                 company,
                 name,
                 password,
                 app.getPath('userData'),
-                id,
+                id
               ],
-              { shell: true },
+              {
+                shell: false,
+                stdio: ['pipe', 'pipe', 'pipe']
+              }
             );
 
             let output = '';
@@ -261,17 +264,13 @@ export async function getImessageData(
       const scriptPath = getAssetPath('imessage_mac.py');
       const userDataPath = app.getPath('userData');
 
-      // Quote paths that may contain spaces
-      const quotedScriptPath = `"${scriptPath}"`;
-      const quotedUserDataPath = `"${userDataPath}"`;
-
       const output = await new Promise<string>((resolve, reject) => {
         const pythonProcess = spawn(
           pythonCommand,
-          [quotedScriptPath, company, name, id, quotedUserDataPath],
+          [scriptPath, company, name, id, userDataPath],
           {
-            shell: true,
-            windowsVerbatimArguments: process.platform === 'win32'
+            shell: false,
+            stdio: ['pipe', 'pipe', 'pipe']
           }
         );
 
