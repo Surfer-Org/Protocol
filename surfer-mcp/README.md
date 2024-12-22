@@ -28,7 +28,12 @@ The server implements one tool:
 
 [TODO: Add configuration details specific to your implementation]
 
-## Quickstart
+## Prerequisites
+
+### Windows
+- Microsoft Visual C++ Build Tools is required for building dependencies
+- Install from: [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+  - During installation, ensure "Desktop development with C++" is selected
 
 ### Install
 
