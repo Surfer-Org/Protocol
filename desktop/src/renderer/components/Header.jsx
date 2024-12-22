@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { Eye, Home, Moon, Sun, Users } from 'lucide-react';
+import { Eye, Home, Moon, Sun, Users, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -547,6 +547,10 @@ export const Header = () => {
   const [allPlatforms, setAllPlatforms] = useState([]); 
   const [platformLogos, setPlatformLogos] = useState({});
   const LOGO_SIZE = 18; // Set a consistent size for all logos
+  const [pythonStatus, setPythonStatus] = useState({
+    status: 'idle',
+    message: ''
+  });
 
   useEffect(() => {
     const loadPlatforms = async () => {
@@ -685,6 +689,49 @@ export const Header = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
+  useEffect(() => {
+    // Listen for Python setup progress
+    const handlePythonProgress = (data) => {
+      setPythonStatus(data);
+    };
+
+    window.electron.ipcRenderer.on('python-setup-progress', handlePythonProgress);
+
+    return () => {
+      window.electron.ipcRenderer.removeListener('python-setup-progress', handlePythonProgress);
+    };
+  }, []);
+
+  const renderPythonStatus = () => {
+    if (pythonStatus.status === 'idle') return null;
+
+    const statusStyles = {
+      starting: { icon: <Loader2 className="animate-spin" size={16} />, color: 'text-blue-500' },
+      progress: { icon: <Loader2 className="animate-spin" size={16} />, color: 'text-blue-500' },
+      error: { icon: <AlertCircle size={16} />, color: 'text-red-500' },
+      warning: { icon: <AlertCircle size={16} />, color: 'text-yellow-500' },
+      complete: { icon: <CheckCircle2 size={16} />, color: 'text-green-500' }
+    };
+
+    const { icon, color } = statusStyles[pythonStatus.status] || statusStyles.progress;
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${color}`}>
+              {icon}
+              <span className="max-w-[200px] truncate">{pythonStatus.message}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{pythonStatus.message}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
   return (
     <StyledSurferHeader theme={theme} className="bg-background text-foreground">
       <div className="div">
@@ -714,6 +761,7 @@ export const Header = () => {
           </div>
         </div>
         <div className="header-option-panel">
+          {renderPythonStatus()}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

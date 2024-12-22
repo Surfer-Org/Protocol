@@ -276,142 +276,150 @@ const RunDetails = ({ runId, onClose }) => {
           
           <div className="flex flex-1">
             {/* Sidebar */}
-            <div className="w-64 border-r border-border bg-muted/40 p-4 space-y-3">
-              {run?.status === 'success' && (
-                <>
-                  <h2 className="text-lg font-semibold">Next Steps</h2>
-                  {sections.map((section) => (
-                    <Button
-                      key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                      variant={activeSection === section.id ? "default" : "ghost"}
-                      className={`w-full justify-start ${activeSection === section.id ? '' : 'border border-border/100'}`}
-                    >
-                      {section.icon}
-                      <span className="ml-2">{section.title}</span>
-                    </Button>
-                  ))}
-                </>
-              )}
+            <div className="w-64 overflow-y-auto h-[90vh]">
+              <div className="p-4 space-y-6">
+                {/* Next Steps section */}
+                {run?.status === 'success' && (
+                  <div>
+                    <h2 className="text-lg font-semibold mb-3">Next Steps</h2>
+                    <div className="space-y-2">
+                      {sections.map((section) => (
+                        <Button
+                          key={section.id}
+                          onClick={() => setActiveSection(section.id)}
+                          variant={activeSection === section.id ? "default" : "ghost"}
+                          className={`w-full justify-start ${activeSection === section.id ? '' : 'border border-border/100'}`}
+                        >
+                          {section.icon}
+                          <span className="ml-2">{section.title}</span>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold">Actions</h2>
-                <div className="space-y-2">
-                  <Button 
-                    variant={activeSection === 'data' ? "default" : "ghost"}
-                    className={`w-full justify-start ${activeSection === 'data' ? '' : 'border border-border/100'}`}
-                    onClick={() => setActiveSection('data')}
-                  >
-                    <Folder className="mr-2 h-4 w-4" />
-                    View Raw Data
-                  </Button>
-
-                  <Button 
-                    variant={activeSection === 'logs' ? "default" : "ghost"}
-                    className={`w-full justify-start ${activeSection === 'logs' ? '' : 'border border-border/100'}`}
-                    onClick={() => setActiveSection('logs')}
-                  >
-                    <Clock className="mr-2 h-4 w-4" />
-                    View Logs
-                  </Button>
-
-                  {run?.exportPath && (
+                {/* Actions section */}
+                <div>
+                  <h2 className="text-lg font-semibold mb-3">Actions</h2>
+                  <div className="space-y-2">
                     <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className={`w-full justify-start ${activeSection === 'files' ? '' : 'border border-border/100'}`}
-                      onClick={handleViewFiles}
+                      variant={activeSection === 'data' ? "default" : "ghost"}
+                      className={`w-full justify-start ${activeSection === 'data' ? '' : 'border border-border/100'}`}
+                      onClick={() => setActiveSection('data')}
                     >
                       <Folder className="mr-2 h-4 w-4" />
-                      Open Files
+                      View Raw Data
                     </Button>
-                  )}
-                  
-                  {(run?.status === 'pending' || run?.status === 'running') && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      className={`w-full justify-start ${activeSection === 'stop' ? '' : 'border border-border/100'}`}
-                      onClick={handleStopRun}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Stop Run
-                    </Button>
-                  )}
 
-                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <AlertDialogTrigger asChild>
+                    <Button 
+                      variant={activeSection === 'logs' ? "default" : "ghost"}
+                      className={`w-full justify-start ${activeSection === 'logs' ? '' : 'border border-border/100'}`}
+                      onClick={() => setActiveSection('logs')}
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      View Logs
+                    </Button>
+
+                    {run?.exportPath && (
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className={`w-full justify-start ${activeSection === 'delete' ? '' : 'border border-border/100'}`}
+                        className={`w-full justify-start ${activeSection === 'files' ? '' : 'border border-border/100'}`}
+                        onClick={handleViewFiles}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Run
+                        <Folder className="mr-2 h-4 w-4" />
+                        Open Files
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete this run and all associated data.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteRun}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
+                    )}
+                    
+                    {(run?.status === 'pending' || run?.status === 'running') && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className={`w-full justify-start ${activeSection === 'stop' ? '' : 'border border-border/100'}`}
+                        onClick={handleStopRun}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Stop Run
+                      </Button>
+                    )}
 
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <StatusIndicator status={run.status} />
-                  <span className="capitalize">{run.status}</span>
-                  <span>•</span>
-                  <span>{getElapsedTime(run.startDate, run.endDate)}</span>
+                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`w-full justify-start ${activeSection === 'delete' ? '' : 'border border-border/100'}`}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Run
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete this run and all associated data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteRun}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
-              </div>
 
-              {run?.vectorization_progress && (
-                <div className="space-y-2">
-                  <h2 className="text-lg font-semibold">Vectorization</h2>
-                  <Card className="p-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Processing {run.name}</span>
-                        <span className={`font-medium ${
-                          run.vectorization_progress.percentage === 100 
-                            ? "text-green-600 dark:text-green-400" 
-                            : ""
-                        }`}>
-                          {run.vectorization_progress.percentage}%
-                        </span>
-                      </div>
-                      <Progress 
-                        value={run.vectorization_progress.percentage} 
-                        className={`w-full ${
-                          run.vectorization_progress.percentage === 100 
-                            ? "bg-green-100 dark:bg-green-900" 
-                            : ""
-                        }`}
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>
-                          {run.vectorization_progress.current.toLocaleString()} / {run.vectorization_progress.total.toLocaleString()}
-                        </span>
-                        {run.vectorization_progress.percentage === 100 && (
-                          <span className="text-green-600 dark:text-green-400 font-medium">
-                            Vectorization Complete ✓
+                {/* Status section */}
+                <div className="pt-3 border-t border-border">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <StatusIndicator status={run.status} />
+                    <span className="capitalize">{run.status}</span>
+                    <span>•</span>
+                    <span>{getElapsedTime(run.startDate, run.endDate)}</span>
+                  </div>
+                </div>
+
+                {/* Vectorization section */}
+                {run?.vectorization_progress && (
+                  <div className="border-t border-border pt-3">
+                    <h2 className="text-sm font-medium mb-2">Vectorization</h2>
+                    <Card className="p-3">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Processing {run.name}</span>
+                          <span className={`font-medium ${
+                            run.vectorization_progress.percentage === 100 
+                              ? "text-green-600 dark:text-green-400" 
+                              : ""
+                          }`}>
+                            {run.vectorization_progress.percentage}%
                           </span>
-                        )}
+                        </div>
+                        <Progress 
+                          value={run.vectorization_progress.percentage} 
+                          className={`w-full ${
+                            run.vectorization_progress.percentage === 100 
+                              ? "bg-green-100 dark:bg-green-900" 
+                              : ""
+                          }`}
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>
+                            {run.vectorization_progress.current.toLocaleString()} / {run.vectorization_progress.total.toLocaleString()}
+                          </span>
+                          {run.vectorization_progress.percentage === 100 && (
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              Vectorization Complete ✓
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
+                    </Card>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Main Content */}

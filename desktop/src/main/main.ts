@@ -33,7 +33,7 @@ import {
   getTwitterCredentials,
 } from './helpers/network';
 import { resolveHtmlPath } from './helpers/util';
-import { spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 dotenv.config();
 const { download } = require('electron-dl');
 import { checkPythonAvailability, checkAndInstallPythonRequirements, setupPythonEnvironment } from './helpers/util';
@@ -493,6 +493,8 @@ export const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
+let vectorizationProcesses: { [runId: string]: ChildProcess } = {};
+
 ipcMain.handle('vectorize-last-run', async () => {
   const scriptPath = getAssetPath('vectorize.py');
   const pythonPath = await checkPythonAvailability(false, 'vectorizing your data');
@@ -528,6 +530,9 @@ ipcMain.handle('vectorize-last-run', async () => {
         shell: false,
         stdio: ['pipe', 'pipe', 'pipe']
       });
+
+      // Store the process with the run ID
+      vectorizationProcesses[latestRun.id] = vectorDB;
 
       // Handle stdout (normal output)
       vectorDB.stdout.on('data', (data) => {
@@ -574,6 +579,20 @@ ipcMain.handle('vectorize-last-run', async () => {
       vectorDB.on('error', (error) => {
         console.error('Vector DB Process Error:', error);
         reject({ success: false, error: error.message });
+      });
+
+      // Clean up process reference when done
+      vectorDB.on('close', (code) => {
+        delete vectorizationProcesses[latestRun.id];
+        resolve({ success: true, code });
+        // ... rest of your existing close handler ...
+      });
+
+      vectorDB.on('error', (error) => {
+        console.error('Vector DB Process Error:', error);
+        reject({ success: false, error: error.message });
+        delete vectorizationProcesses[latestRun.id];
+        // ... rest of your existing error handler ...
       });
     });
   } else {
@@ -1409,4 +1428,40 @@ ipcMain.on('open-platform-export-folder', (event, company, name) => {
   );
   console.log('exportFolderPath', exportFolderPath);
   shell.openPath(exportFolderPath);
+});
+
+ipcMain.handle('cancel-vectorization', async (event, runId: string) => {
+  try {
+    const process = vectorizationProcesses[runId];
+    if (process) {
+      // Kill the process
+      process.kill();
+      delete vectorizationProcesses[runId];
+      
+      // Clean up any temporary files if needed
+      // ... cleanup code ...
+
+      return { success: true, message: 'Vectorization cancelled successfully' };
+    } else {
+      return { success: false, message: 'No active vectorization process found' };
+    }
+  } catch (error) {
+    console.error('Error cancelling vectorization:', error);
+    return { 
+      success: false, 
+      message: `Failed to cancel vectorization: ${error.message}` 
+    };
+  }
+});
+
+// Optional: Clean up processes when app is quitting
+app.on('before-quit', () => {
+  Object.values(vectorizationProcesses).forEach(process => {
+    try {
+      process.kill();
+    } catch (error) {
+      console.error('Error killing process during quit:', error);
+    }
+  });
+  vectorizationProcesses = {};
 });

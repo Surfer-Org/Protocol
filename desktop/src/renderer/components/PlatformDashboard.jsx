@@ -596,13 +596,47 @@ const renderRunStatus = (platform) => {
                           <TableCell>
                             {runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress ? (
                               <div className="flex items-center gap-2">
-                                <Progress 
-                                  value={runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress.percentage} 
-                                  className="w-[100px]"
-                                />
-                                <span className="text-sm text-gray-500">
+                                <div className="flex-grow">
+                                  <Progress 
+                                    value={runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress.percentage} 
+                                    className="w-[100px]"
+                                  />
+                                </div>
+                                <span className="text-sm text-gray-500 min-w-[40px]">
                                   {runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress.percentage}%
                                 </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2"
+                                  onClick={async () => {
+                                    const run = runsWithProgress.find(r => r.platformId === platform.id);
+                                    if (run) {
+                                      try {
+                                        const result = await window.electron.ipcRenderer.invoke('cancel-vectorization', run.id);
+                                        if (result.success) {
+                                          dispatch(clearVectorizationProgress(run.id));
+                                        } else {
+                                          // Handle failure - maybe show a toast
+                                          toast({
+                                            title: 'Failed to cancel vectorization',
+                                            description: result.message,
+                                            variant: 'destructive'
+                                          });
+                                        }
+                                      } catch (error) {
+                                        console.error('Error cancelling vectorization:', error);
+                                        toast({
+                                          title: 'Error',
+                                          description: 'Failed to cancel vectorization',
+                                          variant: 'destructive'
+                                        });
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <X size={14} className="text-gray-500 hover:text-red-500" />
+                                </Button>
                               </div>
                             ) : (
                               <span className="text-sm text-gray-500">N/A</span>

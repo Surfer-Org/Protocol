@@ -128,10 +128,10 @@ export async function getImessageData(
       const pythonCommand = await checkPythonAvailability(false, 'iMessage export');
       if (!pythonCommand) return null;
 
-      const requirementsPath = getAssetPath('imessage_windows_reqs.txt');
-      const requirements = fs
-        .readFileSync(requirementsPath, 'utf-8')
-        .split('\n');
+      // const requirementsPath = getAssetPath('imessage_windows_reqs.txt');
+      // const requirements = fs
+      //   .readFileSync(requirementsPath, 'utf-8')
+      //   .split('\n');
       const imessagePath = path.join(
         app.getPath('userData'),
         'exported_data',
@@ -139,23 +139,23 @@ export async function getImessageData(
         name,
       );
 
-      let packagesInstalled = false;
-      for (const req of requirements) {
-        if (req.trim() !== '' && !fs.existsSync(imessagePath)) {
-          console.log('Installing', req.trim());
-          try {
-            const { stdout, stderr } = await execAsync(
-              `${pythonCommand} -m pip install ${req.trim()}`,
-            );
-            console.log(`Installed ${req.trim()} successfully.`);
-            packagesInstalled = true;
-          } catch (installError) {
-            console.error(`Failed to install ${req.trim()}:`, installError);
-          }
-        }
-      }
+      // let packagesInstalled = false;
+      // for (const req of requirements) {
+      //   if (req.trim() !== '' && !fs.existsSync(imessagePath)) {
+      //     console.log('Installing', req.trim());
+      //     try {
+      //       const { stdout, stderr } = await execAsync(
+      //         `${pythonCommand} -m pip install ${req.trim()}`,
+      //       );
+      //       console.log(`Installed ${req.trim()} successfully.`);
+      //       packagesInstalled = true;
+      //     } catch (installError) {
+      //       console.error(`Failed to install ${req.trim()}:`, installError);
+      //     }
+      //   }
+      // }
 
-      if (packagesInstalled && !fs.existsSync(imessagePath)) {
+      if (!fs.existsSync(imessagePath)) {
         fs.mkdirSync(imessagePath, { recursive: true });
         console.log(`Created directory: ${imessagePath}`);
       }
