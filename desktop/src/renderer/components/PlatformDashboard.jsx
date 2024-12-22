@@ -259,7 +259,15 @@ useEffect(() => {
   }, [runs]);
 
   const isExportVectorizing = useCallback((platformId) => {
-    return runs.some(run => run.platformId === platformId && run.vectorization_progress.percentage !== 100);
+    const platformRuns = runs.filter(run => run.platformId === platformId);
+    if (platformRuns.some(run => 
+      run.vectorization_progress && 
+      run.vectorization_progress.percentage !== undefined && 
+      run.vectorization_progress.percentage !== 100
+    )) {
+      return true;
+    }
+    return false;
   }, [runs]);
 
 

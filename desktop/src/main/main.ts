@@ -36,7 +36,7 @@ import { resolveHtmlPath } from './helpers/util';
 import { spawn } from 'child_process';
 dotenv.config();
 const { download } = require('electron-dl');
-import { checkPythonAvailability, checkAndInstallPythonRequirements } from './helpers/util';
+import { checkPythonAvailability, checkAndInstallPythonRequirements, setupPythonEnvironment } from './helpers/util';
 
 // Preventing multiple instances of Surfer
 
@@ -1275,6 +1275,14 @@ app
         path: app.getPath('exe'),
       });
     }
+
+    // Set up Python environment before anything else
+    const pythonPath = await setupPythonEnvironment();
+    if (!pythonPath) {
+      console.error('Failed to set up Python environment');
+      // You might want to handle this case appropriately
+    }
+
     await setupExpressServer();
     createWindow();
 
@@ -1334,9 +1342,6 @@ app
         }
       });
     }
-
-    // Check and install Python requirements
-    await checkAndInstallPythonRequirements();
   })
   .catch(console.log);
 
