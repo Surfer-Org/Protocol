@@ -38,7 +38,7 @@ export interface IRun {
   isConnected: boolean;
   startDate: string;
   endDate?: string;
-  status: 'pending' | 'running' | 'success' | 'error' | 'stopped';
+  status: 'pending' | 'running' | 'success' | 'error' | 'stopped' | 'vectorizing';
   url: string;
   exportSize?: number;
   exportPath?: string;
@@ -47,5 +47,11 @@ export interface IRun {
   currentStep?: string;
   isUpdated?: boolean;
   vectorize_config?: any;
+  vectorization_progress?: any;
   logs?: string;
+  vectorizationProgress?: {
+    current: number;
+    total: number;
+    percentage: number;
+  };
 }

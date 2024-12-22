@@ -10,6 +10,7 @@ import CodeBlock from './CodeBlock';
 import { getCodeExamples } from "../helpers";
 import MonacoEditor from '@monaco-editor/react'
 import { deleteRun } from '../state/actions';
+import { Progress } from "./ui/progress";
 
 const StatusIndicator = ({ status }) => {
   switch (status) {
@@ -373,6 +374,44 @@ const RunDetails = ({ runId, onClose }) => {
                   <span>{getElapsedTime(run.startDate, run.endDate)}</span>
                 </div>
               </div>
+
+              {run?.vectorization_progress && (
+                <div className="space-y-2">
+                  <h2 className="text-lg font-semibold">Vectorization</h2>
+                  <Card className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Processing {run.name}</span>
+                        <span className={`font-medium ${
+                          run.vectorization_progress.percentage === 100 
+                            ? "text-green-600 dark:text-green-400" 
+                            : ""
+                        }`}>
+                          {run.vectorization_progress.percentage}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={run.vectorization_progress.percentage} 
+                        className={`w-full ${
+                          run.vectorization_progress.percentage === 100 
+                            ? "bg-green-100 dark:bg-green-900" 
+                            : ""
+                        }`}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>
+                          {run.vectorization_progress.current.toLocaleString()} / {run.vectorization_progress.total.toLocaleString()}
+                        </span>
+                        {run.vectorization_progress.percentage === 100 && (
+                          <span className="text-green-600 dark:text-green-400 font-medium">
+                            Vectorization Complete ✓
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
             </div>
 
             {/* Main Content */}

@@ -16,19 +16,30 @@ try:
     collection = client.get_collection("surfer_collection")
     
     # Perform search
-    results = collection.query(
+    regular_results = collection.query(
         query_texts=[query],
         n_results=5,
-        where={"name": platform}  # Return top 5 results
-    
+        where={"name": platform}
     )
+
+    full_text_results = collection.query(
+        query_texts=[query],
+        n_results=5,
+        where={"name": platform},
+        where_document={"$contains":query}
+    )
+
+    full_results = {
+        "regular_results": regular_results,
+        "full_text_results": full_text_results
+    }
     
     # Format results for output
     formatted_results = {
-        "documents": results["documents"][0],
-        "distances": results["distances"][0],
-        "ids": results["ids"][0],
-        "metadata": results["metadatas"][0]
+        "documents": full_results["regular_results"]["documents"][0] + full_results["full_text_results"]["documents"][0],
+        "distances": full_results["regular_results"]["distances"][0] + full_results["full_text_results"]["distances"][0],
+        "ids": full_results["regular_results"]["ids"][0] + full_results["full_text_results"]["ids"][0],
+        "metadata": full_results["regular_results"]["metadatas"][0] + full_results["full_text_results"]["metadatas"][0]
     }
     
     # Print as JSON for easy parsing

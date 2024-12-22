@@ -187,6 +187,25 @@ const appReducer = (state = initialAppState.app, action: any) => {
               : run
           )
         }
+    case 'SET_VECTORIZATION_PROGRESS':
+      return {
+        ...state,
+        runs: state.runs.map(run => 
+          run.id === action.payload.runId
+            ? { ...run, vectorization_progress: action.payload.progress }
+            : run
+        )
+      };
+
+    case 'CLEAR_VECTORIZATION_PROGRESS':
+      return {
+        ...state,
+        runs: state.runs.map(run => 
+          run.id === action.payload.runId
+            ? { ...run, vectorization_progress: undefined }
+            : run
+        )
+      };
     default:
       return state;
   }

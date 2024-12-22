@@ -38,10 +38,6 @@ export const setUserOS = (os: IUser['os']) => ({
   payload: os,
 });
 
-export const setDataSourceImportStatus = (sourceId: string, status: 'not_imported' | 'importing' | 'imported') => ({
-  type: 'SET_DATA_SOURCE_IMPORT_STATUS',
-  payload: { sourceId, status },
-});
 
 export const addRun = (run: IRun) => ({
   type: 'ADD_RUN',
@@ -51,11 +47,6 @@ export const addRun = (run: IRun) => ({
 export const updateRunStatus = (runId: string, status: IRun['status'], endDate?: string) => ({
   type: 'UPDATE_RUN_STATUS',
   payload: { runId, status, endDate },
-});
-
-export const updateStepStatus = (runId: string, taskId: string, stepId: string, status: IStep['status'], startTime?: string, endTime?: string, logs?: string) => ({
-  type: 'UPDATE_STEP_STATUS',
-  payload: { runId, taskId, stepId, status, startTime, endTime, logs },
 });
 
 
@@ -161,3 +152,13 @@ export const updateRunConnected = (runId: string, isConnected: boolean) => ({
   type: 'UPDATE_RUN_CONNECTED',
   payload: {runId, isConnected}
 })
+
+export const setVectorizationProgress = (runId: string, progress: { current: number; total: number; percentage: number }) => ({
+  type: 'SET_VECTORIZATION_PROGRESS',
+  payload: { runId, progress },
+});
+
+  export const clearVectorizationProgress = (runId: string) => ({
+    type: 'CLEAR_VECTORIZATION_PROGRESS',
+    payload: { runId },
+  });

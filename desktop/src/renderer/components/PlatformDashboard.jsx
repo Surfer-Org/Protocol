@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { startRun, toggleRunVisibility, setExportRunning } from '../state/actions';
+import { startRun, toggleRunVisibility, setExportRunning, setVectorizationProgress, clearVectorizationProgress } from '../state/actions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { ArrowUpRight, Check, X, Link, Search, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
@@ -17,6 +17,7 @@ import { Progress } from './ui/progress'
 const PlatformDashboard = ({ onPlatformClick, webviewRef }) => {
   const dispatch = useDispatch();
   const runs = useSelector(state => state.app.runs);
+  const runsWithProgress = runs.filter(run => run.vectorization_progress && run.vectorization_progress.percentage !== 100);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,8 +34,11 @@ const PlatformDashboard = ({ onPlatformClick, webviewRef }) => {
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isVectorizing, setIsVectorizing] = useState(false);
-  const [vectorizationProgress, setVectorizationProgress] = useState({});
 
+
+useEffect(() => {
+  console.log('runsWithProgress: ', runsWithProgress);
+}, [runsWithProgress]);
 
 useEffect(() => {
   // Listen for runs request from main process
@@ -199,7 +203,8 @@ useEffect(() => {
       isUpdated: platform.isUpdated,
       exportSize: null, 
       url: 'about:blank',
-      vectorize_config: platform.vectorize_config
+      vectorize_config: platform.vectorize_config,
+      vectorization_progress: 0,
     }; 
 
 
@@ -248,8 +253,13 @@ useEffect(() => {
       }
     });
   }, [filteredPlatforms]);
+
   const isExportRunning = useCallback((platformId) => {
     return runs.some(run => run.platformId === platformId && run.status === 'running');
+  }, [runs]);
+
+  const isExportVectorizing = useCallback((platformId) => {
+    return runs.some(run => run.platformId === platformId && run.vectorization_progress.percentage !== 100);
   }, [runs]);
 
 
@@ -323,28 +333,6 @@ const renderRunStatus = (platform) => {
   }
 };
 
-const vectorizeLastRun = async () => {
-  setIsVectorizing(true);
-  try {
-    const response = await window.electron.ipcRenderer.invoke('vectorize-last-run');
-    console.log('vectorizeLastRun response: ', response);
-    toast({
-      title: 'Vectorization Complete',
-      description: 'The last run has been successfully vectorized',
-    });
-    setVectorizationProgress({});
-  } catch (error) {
-    console.error('Vectorization failed:', error);
-    toast({
-      title: 'Vectorization Failed',
-      description: 'Failed to vectorize the last run',
-      variant: 'destructive',
-    });
-  } finally {
-    setIsVectorizing(false);
-  }
-};
-
   useEffect(() => {
     const logContainers = document.querySelectorAll('#log-container');
     if (logContainers) {
@@ -398,31 +386,38 @@ const vectorizeLastRun = async () => {
   useEffect(() => {
     const handleVectorDBProgress = (progress) => {
       const [platformId, current, total] = progress.split(':');
+      const percentage = Math.round((parseInt(current) / parseInt(total)) * 100);
       
-      if (parseInt(current) === parseInt(total)) {
-        setVectorizationProgress(prev => {
-          const newProgress = { ...prev };
-          delete newProgress[platformId];
-          return newProgress;
-        });
-        return;
-      }
+      // Find ALL running platforms with matching platformId
+      const currentRun = runs
+        .filter(run => run.platformId === platformId)
+        .reduce((latest, current) => {
+          if (!latest) return current;
+          const latestDate = latest.startDate ? new Date(latest.startDate) : new Date(0);
+          const currentDate = current.startDate ? new Date(current.startDate) : new Date(0);
+          return currentDate > latestDate ? current : latest;
+        }, null);
 
-      setVectorizationProgress(prev => ({
-        ...prev,
-        [platformId]: {
+      //   // Only update if the progress is increasing or it's the same total
+      //   (!run.vectorization_progress || 
+      //    run.vectorization_progress.total === parseInt(total) ||
+      //    parseInt(current) > run.vectorization_progress.current)
+      // );
+
+      if (currentRun) {
+        dispatch(setVectorizationProgress(currentRun.id, {
           current: parseInt(current),
           total: parseInt(total),
-          percentage: Math.round((parseInt(current) / parseInt(total)) * 100)
-        }
-      }));
+          percentage
+        }));
+      }
     };
 
     window.electron.ipcRenderer.on('vector-db-progress', handleVectorDBProgress);
     return () => {
       window.electron.ipcRenderer.removeAllListeners('vector-db-progress');
     };
-  }, [runs.length]);
+  }, [runs, dispatch]);
 
   useEffect(() => {
     const handleVectorDBOutput = (output) => {
@@ -524,20 +519,20 @@ const vectorizeLastRun = async () => {
                     <TableHead></TableHead>
                     <TableHead>Latest Run</TableHead>
                     <TableHead>Actions</TableHead>
-                    {Object.keys(vectorizationProgress).length > 0 && <TableHead>Vectorization Progress</TableHead>}
+                    {runsWithProgress.length > 0  && <TableHead>Vectorization Progress</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedPlatforms.map((platform) => (
-                    <TableRow
-                      key={platform.id}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-2">
-                          <div
-                            className="flex items-center space-x-2 cursor-pointer hover:underline"
-                            onClick={() => onPlatformClick(platform)}
-                          >
+                  {paginatedPlatforms.map((platform) => {
+                    const platformRun = runs.find(run => run.platformId === platform.id);
+                    return (
+                      <TableRow key={platform.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className="flex items-center space-x-2 cursor-pointer hover:underline"
+                              onClick={() => onPlatformClick(platform)}
+                            >
                  {platformLogos[platform.id] && (
                   <img 
                     src={platformLogos[platform.id]} 
@@ -553,59 +548,62 @@ const vectorizeLastRun = async () => {
                               <ArrowUpRight size={22} className="ml-1 flex-shrink-0" color="#5a5a5a" />
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="font-medium">{platform.description || 'No description available'}</p>
-                      </TableCell>
-                      <TableCell>
-                        {renderRunStatus(platform)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          {!connectedPlatforms[platform.id] && platform.needsConnection ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => window.electron.ipcRenderer.send('connect-platform', platform)}
-                            >
-                              <Link size={16} className="mr-2" />
-                              Connect
-                            </Button>
-                          ) : (
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <p className="font-medium">{platform.description || 'No description available'}</p>
+                        </TableCell>
+                        <TableCell>
+                          {renderRunStatus(platform)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            {!connectedPlatforms[platform.id] && platform.needsConnection ? (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleExportClick(platform)}
-                                disabled={isExportRunning(platform.id)}
+                                onClick={() => window.electron.ipcRenderer.send('connect-platform', platform)}
                               >
-                                <IoSync
-                                  size={16}
-                                  className={`mr-2 ${isExportRunning(platform.id) ? 'animate-spin' : ''}`}
-                                />
-                                {isExportRunning(platform.id) ? 'Fetching...' : 'Fetch Data'}
+                                <Link size={16} className="mr-2" />
+                                Connect
                               </Button>
-    
-                          )}
-                        </div>
-                      </TableCell>
-                      {Object.keys(vectorizationProgress).length > 0 && <TableCell>
-                        {vectorizationProgress[platform.id] ? (
-                          <div className="flex items-center gap-2">
-                            <Progress 
-                              value={vectorizationProgress[platform.id].percentage} 
-                              className="w-[100px]"
-                            />
-                            <span className="text-sm text-gray-500">
-                              {vectorizationProgress[platform.id].percentage}%
-                            </span>
+                            ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleExportClick(platform)}
+                                  disabled={isExportRunning(platform.id) || isExportVectorizing(platform.id)}
+                                >
+                                  <IoSync
+                                    size={16}
+                                    className={`mr-2 ${isExportRunning(platform.id) ? 'animate-spin' : ''}`}
+                                  />
+                                  {isExportRunning(platform.id) ? 'Fetching...' : 'Fetch Data'}
+                                </Button>
+      
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">N/A</span>
+                        </TableCell>
+                        {runsWithProgress.length > 0 && (
+                          <TableCell>
+                            {runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress ? (
+                              <div className="flex items-center gap-2">
+                                <Progress 
+                                  value={runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress.percentage} 
+                                  className="w-[100px]"
+                                />
+                                <span className="text-sm text-gray-500">
+                                  {runsWithProgress.find(run => run.platformId === platform.id)?.vectorization_progress.percentage}%
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500">N/A</span>
+                            )}
+                          </TableCell>
                         )}
-                      </TableCell>}
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TooltipProvider>
