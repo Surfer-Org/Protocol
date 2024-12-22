@@ -721,7 +721,7 @@ export const Header = () => {
           <TooltipTrigger asChild>
             <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${color}`}>
               {icon}
-              <span className="max-w-[200px] truncate">{pythonStatus.message}</span>
+              <span className="max-w-[300px] whitespace-nowrap">{pythonStatus.message}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent>

@@ -1,14 +1,14 @@
 import asyncio
+import os
 from mcp.server.models import InitializationOptions
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
 from pydantic import AnyUrl
 import mcp.server.stdio
-import chromadb
-from chromadb.utils import embedding_functions
-import os
 import requests
 import json
+import chromadb
+from chromadb.utils import embedding_functions
 
 embedding_function = embedding_functions.DefaultEmbeddingFunction
 
@@ -38,7 +38,6 @@ else:
 existing_chunks = collection.get()
 names_array = list(set(chunk['name'] for chunk in existing_chunks['metadatas']))
 
-# Store notes as a simple key-value dict to demonstrate state management
 notes: dict[str, str] = {}
 
 server = Server("surfer-mcp")
@@ -182,7 +181,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="surfer-mcp",
-                server_version="0.1.0",
+                server_version="0.1.1",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

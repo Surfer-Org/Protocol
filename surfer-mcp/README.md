@@ -1,6 +1,6 @@
 # surfer-mcp MCP server
 
-This is the MCP server for Surfer that connects to the Claude Desktop App
+This is the official MCP server for Surfer
 
 ## Components
 

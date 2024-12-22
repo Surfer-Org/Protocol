@@ -276,7 +276,7 @@ const RunDetails = ({ runId, onClose }) => {
           
           <div className="flex flex-1">
             {/* Sidebar */}
-            <div className="w-64 overflow-y-auto h-[90vh]">
+            <div className="w-64 overflow-y-auto h-[90vh] border-r border-border">
               <div className="p-4 space-y-6">
                 {/* Next Steps section */}
                 {run?.status === 'success' && (
