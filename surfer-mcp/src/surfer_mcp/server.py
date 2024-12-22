@@ -37,7 +37,7 @@ names_array = list(set(chunk['name'] for chunk in existing_chunks['metadatas']))
 
 notes: dict[str, str] = {}
 
-server = Server("surfer_mcp")
+server = Server("surfer-mcp")
 
 @server.list_resources()
 async def handle_list_resources() -> list[types.Resource]:
@@ -177,7 +177,7 @@ async def main():
             read_stream,
             write_stream,
             InitializationOptions(
-                server_name="surfer_mcp",
+                server_name="surfer-mcp",
                 server_version="0.1.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),

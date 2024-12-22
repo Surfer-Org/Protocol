@@ -1,4 +1,4 @@
-# surfer_mcp MCP server
+# surfer-mcp MCP server
 
 This is the MCP server for Surfer that connects to the Claude Desktop App
 
@@ -41,13 +41,13 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
   <summary>Development/Unpublished Servers Configuration</summary>
   ```
   "mcpServers": {
-    "surfer_mcp": {
+    "surfer-mcp": {
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/sahil/Documents/Surfer-Protocol/surfer_mcp",
+        "/Users/sahil/Documents/Surfer-Protocol/surfer-mcp",
         "run",
-        "surfer_mcp"
+        "surfer-mcp"
       ]
     }
   }
@@ -58,10 +58,10 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
   <summary>Published Servers Configuration</summary>
   ```
   "mcpServers": {
-    "surfer_mcp": {
+    "surfer-mcp": {
       "command": "uvx",
       "args": [
-        "surfer_mcp"
+        "surfer-mcp"
       ]
     }
   }
@@ -104,7 +104,7 @@ experience, we strongly recommend using the [MCP Inspector](https://github.com/m
 You can launch the MCP Inspector via [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) with this command:
 
 ```bash
-npx @modelcontextprotocol/inspector uv --directory /Users/sahil/Documents/Surfer-Protocol/surfer_mcp run surfer-mcp
+npx @modelcontextprotocol/inspector uv --directory /Users/sahil/Documents/Surfer-Protocol/surfer-mcp run surfer-mcp
 ```
 
 

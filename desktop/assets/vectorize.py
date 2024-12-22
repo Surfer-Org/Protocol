@@ -20,7 +20,7 @@ latest_run = json.loads(base64.b64decode(latest_run_base64).decode('utf-8'))
 platform_id = latest_run['platformId']
 
     # Read JSON from file
-with open(json_file_path, 'r') as f:
+with open(json_file_path, 'r', encoding='utf-8') as f:
     json_data = json.load(f)
     
 
