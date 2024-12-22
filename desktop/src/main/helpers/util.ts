@@ -56,111 +56,111 @@ export function getFilesInFolder(folderPath: string) {
 }
 
 export async function setupPythonEnvironment(): Promise<string | null> {
-  const userData = app.getPath('userData');
-  const venvPath = path.join(userData, 'venv');
-  
-  console.log('Setting up Python environment...');
-  console.log('User data path:', userData);
-  console.log('Virtual env path:', venvPath);
-  
-  // Get python command
-  const pythonCmd = await checkPythonAvailability(true);
-  if (!pythonCmd) {
-    console.error('No Python installation found');
-    return null;
-  }
-  console.log('Found Python command:', pythonCmd);
+  // Run the setup in the background
+  (async () => {
+    const userData = app.getPath('userData');
+    const venvPath = path.join(userData, 'venv');
+    
+    console.log('Setting up Python environment in background...');
+    console.log('User data path:', userData);
+    console.log('Virtual env path:', venvPath);
+    
+    // Get python command
+    const pythonCmd = await checkPythonAvailability(true);
+    if (!pythonCmd) {
+      console.error('No Python installation found');
+      return null;
+    }
+    console.log('Found Python command:', pythonCmd);
 
-  try {
-    // Check if venv already exists
-    if (!fs.existsSync(venvPath)) {
-      console.log('Creating new virtual environment...');
-      
-      // Create virtual environment with detailed error output
-      try {
-        const createVenvResult = await execAsync(`${pythonCmd} -m venv "${venvPath}"`, {
-          timeout: 60000, // 1 minute timeout
-        });
-        console.log('Create venv stdout:', createVenvResult.stdout);
-        console.log('Create venv stderr:', createVenvResult.stderr);
-      } catch (venvError) {
-        console.error('Failed to create virtual environment:', venvError);
-        throw venvError;
+    try {
+      // Check if venv already exists
+      if (!fs.existsSync(venvPath)) {
+        console.log('Creating new virtual environment...');
+        
+        try {
+          const createVenvResult = await execAsync(`${pythonCmd} -m venv "${venvPath}"`, {
+
+          });
+          console.log('Create venv stdout:', createVenvResult.stdout);
+          console.log('Create venv stderr:', createVenvResult.stderr);
+        } catch (venvError) {
+          console.error('Failed to create virtual environment:', venvError);
+          throw venvError;
+        }
+        
+        const pythonVenvPath = process.platform === 'win32'
+          ? path.join(venvPath, 'Scripts', 'python.exe')
+          : path.join(venvPath, 'bin', 'python');
+        
+        console.log('Virtual env Python path:', pythonVenvPath);
+        
+        if (!fs.existsSync(pythonVenvPath)) {
+          throw new Error(`Virtual environment Python not found at: ${pythonVenvPath}`);
+        }
+        
+        try {
+          console.log('Upgrading pip...');
+          const pipUpgradeResult = await execAsync(`"${pythonVenvPath}" -m pip install --upgrade pip`, {
+          });
+          console.log('Pip upgrade stdout:', pipUpgradeResult.stdout);
+        } catch (pipError) {
+          console.error('Failed to upgrade pip:', pipError);
+          // Continue even if pip upgrade fails
+        }
+        
+        try {
+          const requirementsPath = getAssetPath('requirements.txt');
+          console.log('Installing requirements from:', requirementsPath);
+          
+          const installResult = await execAsync(`"${pythonVenvPath}" -m pip install -r "${requirementsPath}"`, {
+
+          });
+          console.log('Requirements install stdout:', installResult.stdout);
+        } catch (reqError) {
+          console.error('Failed to install requirements:', reqError);
+          // Continue even if requirements installation fails
+        }
+        
+        console.log('Virtual environment setup complete!');
+      } else {
+        console.log('Virtual environment already exists at:', venvPath);
       }
-      
-      // Get venv python path
-      const pythonVenvPath = process.platform === 'win32'
+
+      // Return the path to the virtual environment's Python executable
+      const finalPythonPath = process.platform === 'win32'
         ? path.join(venvPath, 'Scripts', 'python.exe')
         : path.join(venvPath, 'bin', 'python');
       
-      console.log('Virtual env Python path:', pythonVenvPath);
-      
-      // Verify venv python exists
-      if (!fs.existsSync(pythonVenvPath)) {
-        throw new Error(`Virtual environment Python not found at: ${pythonVenvPath}`);
-      }
-      
-      // Upgrade pip with detailed error output
-      try {
-        console.log('Upgrading pip...');
-        const pipUpgradeResult = await execAsync(`"${pythonVenvPath}" -m pip install --upgrade pip`, {
-          timeout: 60000,
-        });
-        console.log('Pip upgrade stdout:', pipUpgradeResult.stdout);
-        console.log('Pip upgrade stderr:', pipUpgradeResult.stderr);
-      } catch (pipError) {
-        console.error('Failed to upgrade pip:', pipError);
-        throw pipError;
-      }
-      
-      // Install requirements with detailed error output
-      try {
-        const requirementsPath = getAssetPath('requirements.txt');
-        console.log('Installing requirements from:', requirementsPath);
-        
-        const installResult = await execAsync(`"${pythonVenvPath}" -m pip install -r "${requirementsPath}"`, {
-          timeout: 300000, // 5 minute timeout
-        });
-        console.log('Requirements install stdout:', installResult.stdout);
-        console.log('Requirements install stderr:', installResult.stderr);
-      } catch (reqError) {
-        console.error('Failed to install requirements:', reqError);
-        throw reqError;
-      }
-      
-      console.log('Virtual environment setup complete!');
-    } else {
-      console.log('Virtual environment already exists at:', venvPath);
-    }
+      console.log('Using Python path:', finalPythonPath);
+      return finalPythonPath;
 
-    // Return the path to the virtual environment's Python executable
-    const finalPythonPath = process.platform === 'win32'
-      ? path.join(venvPath, 'Scripts', 'python.exe')
-      : path.join(venvPath, 'bin', 'python');
-    
-    console.log('Using Python path:', finalPythonPath);
-    return finalPythonPath;
-
-  } catch (error) {
-    console.error('Error setting up virtual environment:', error);
-    
-    // Try to clean up failed venv
-    try {
-      if (fs.existsSync(venvPath)) {
-        fs.rmSync(venvPath, { recursive: true, force: true });
-        console.log('Cleaned up failed virtual environment');
+    } catch (error) {
+      console.error('Error setting up virtual environment:', error);
+      
+      try {
+        if (fs.existsSync(venvPath)) {
+          fs.rmSync(venvPath, { recursive: true, force: true });
+          console.log('Cleaned up failed virtual environment');
+        }
+      } catch (cleanupError) {
+        console.error('Failed to clean up virtual environment:', cleanupError);
       }
-    } catch (cleanupError) {
-      console.error('Failed to clean up virtual environment:', cleanupError);
+      
+      // Show error dialog in background
+      dialog.showMessageBox({
+        type: 'error',
+        title: 'Python Environment Setup Failed',
+        message: `Failed to set up Python virtual environment: ${error.message}\nPlease make sure Python is installed correctly.`,
+      });
+      return null;
     }
-    
-    await dialog.showMessageBox({
-      type: 'error',
-      title: 'Python Environment Setup Failed',
-      message: `Failed to set up Python virtual environment: ${error.message}\nPlease make sure Python is installed correctly.`,
-    });
-    return null;
-  }
+  })().catch(console.error); // Handle any errors in the background process
+
+  // Return immediately to not block app startup
+  return process.platform === 'win32'
+    ? path.join(app.getPath('userData'), 'venv', 'Scripts', 'python.exe')
+    : path.join(app.getPath('userData'), 'venv', 'bin', 'python');
 }
 
 export async function checkPythonAvailability(on_startup: boolean = false, action: string = 'this action'): Promise<string | null> {
