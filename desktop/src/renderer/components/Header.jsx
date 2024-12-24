@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { Eye, Home, Moon, Sun, Users, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Eye, Home, Moon, Sun, CircleUserRound, AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import { faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -17,6 +17,7 @@ import { setCurrentRoute, toggleRunVisibility, updateBreadcrumbToIndex, setIsMac
 import { Button } from './ui/button';
 import { Toggle } from './ui/toggle';
 import { setIsRunLayerVisible } from '../state/actions';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const getStyleHorizontalLock = (style) =>
   style?.transform
@@ -535,6 +536,77 @@ const StyledSurferHeader = styled.div`
   }
 `;
 
+const WelcomePopup = styled(motion.div)`
+  position: fixed;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  max-width: 500px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .social-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .social-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 8px;
+    background: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    font-size:16px;
+
+    &:hover {
+      background: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
+    }
+  }
+`;
+
+const Overlay = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+  backdrop-filter: blur(2px);
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: hsl(var(--foreground));
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  
+  &:hover {
+    background: hsl(var(--accent));
+  }
+`;
+
 export const Header = () => {
   const dispatch = useDispatch();
   const breadcrumb = useSelector((state) => state.app.breadcrumb);
@@ -551,6 +623,9 @@ export const Header = () => {
     status: 'idle',
     message: ''
   });
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomePosition, setWelcomePosition] = useState({ x: 0, y: 0 });
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const loadPlatforms = async () => {
@@ -732,123 +807,217 @@ export const Header = () => {
     );
   };
 
+  useEffect(() => {
+    // Check if this is the first time running the app
+    const hasShownWelcome = localStorage.getItem('hasShownWelcome');
+    if (!hasShownWelcome) {
+      setShowWelcome(true);
+      localStorage.setItem('hasShownWelcome', 'true');
+      
+      // Set initial position (center of screen)
+      setWelcomePosition({
+        x: window.innerWidth / 2 - 200, // half of max-width
+        y: window.innerHeight / 2 - 100
+      });
+
+    }
+  }, []);
+
+  const handleCloseWelcome = () => {
+    setIsAnimating(true);
+    // Get the position of the Discord button
+    const discordButton = document.querySelector('[data-discord-button]');
+    if (discordButton) {
+      const rect = discordButton.getBoundingClientRect();
+      setWelcomePosition({
+        x: rect.left,
+        y: rect.top
+      });
+    }
+    
+    // After animation completes, hide the popup
+    setTimeout(() => {
+      setShowWelcome(false);
+      setIsAnimating(false);
+    }, 500);
+  };
+
   return (
-    <StyledSurferHeader theme={theme} className="bg-background text-foreground">
-      <div className="div">
-        <div className="header-main-content">
-          {!isFullScreen && isMac && <div className="browser-controls" />}
+    <>
+      <AnimatePresence>
+        {showWelcome && (
+          <>
+            <Overlay
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <WelcomePopup
+              initial={{ 
+                x: welcomePosition.x,
+                y: welcomePosition.y,
+                opacity: 0,
+                scale: 0.8
+              }}
+              animate={{ 
+                x: isAnimating ? welcomePosition.x : window.innerWidth / 2 - 250,
+                y: isAnimating ? welcomePosition.y : window.innerHeight / 2 - 150,
+                opacity: isAnimating ? 0 : 1,
+                scale: isAnimating ? 0.5 : 1
+              }}
+              exit={{ 
+                opacity: 0,
+                scale: 0.5,
+                transition: { duration: 0.2 }
+              }}
+              transition={{
+                type: "spring",
+                damping: 20,
+                stiffness: 300
+              }}
+            >
+              <CloseButton onClick={handleCloseWelcome}>
+                <X size={16} />
+              </CloseButton>
+              <div className="space-y-4">
+                <h3 className="text-2xl font-bold">Welcome to Surfer! 🏄‍♂️</h3>
+                <p className="text-base text-muted-foreground leading-relaxed">
+                  Thanks for downloading! If you have any questions or feedback, feel free to reach out:
+                </p>
+                <div className="social-buttons">
+                  <Button 
+                    variant="secondary" 
+                    className="social-button"
+                    onClick={() => window.electron.ipcRenderer.send('open-external', 'https://discord.gg/5KQkWApkYC')}
+                  >
+                    <FontAwesomeIcon icon={faDiscord} size="lg" />
+                    Join Discord
+                  </Button>
+                  <Button 
+                    variant="secondary"
+                    className="social-button"
+                    onClick={() => window.electron.ipcRenderer.send('open-external', 'https://github.com/Surfer-Org/Protocol/tree/main/desktop')}
+                  >
+                    <FontAwesomeIcon icon={faGithub} size="lg" />
+                    GitHub
+                  </Button>
+                </div>
+                <div className="mt-4">
+                  <p className="text-xl text-muted-foreground">
+                    Contact me directly:
+                  </p>
+                  <ul className="list-disc list-inside text-lg text-muted-foreground ml-2 space-y-1">
+                    <li>Twitter: @SahilLalani0</li>
+                    <li>Bluesky: @sahillalani0.bsky.social</li>
+                    <li>Discord: @littlebigdog</li>
+                  </ul>
+                </div>
+              </div>
+            </WelcomePopup>
+          </>
+        )}
+      </AnimatePresence>
+      <StyledSurferHeader theme={theme} className="bg-background text-foreground">
+        <div className="div">
+          <div className="header-main-content">
+            {!isFullScreen && isMac && <div className="browser-controls" />}
+            <div className="header-option-panel">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumb.map((item, index) => (
+                    <React.Fragment key={index}>
+                      {index > 0 && <BreadcrumbSeparator>/</BreadcrumbSeparator>}
+                      <BreadcrumbItem>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleBreadcrumbClick(item.link, index)}
+                          className="flex items-center px-2 py-1"
+                        >
+                          {getIconForBreadcrumb(item)}
+                          {item.text}
+                        </Button>
+                      </BreadcrumbItem>  
+                    </React.Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </div>
           <div className="header-option-panel">
-            <Breadcrumb>
-              <BreadcrumbList>
-                {breadcrumb.map((item, index) => (
-                  <React.Fragment key={index}>
-                    {index > 0 && <BreadcrumbSeparator>/</BreadcrumbSeparator>}
-                    <BreadcrumbItem>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleBreadcrumbClick(item.link, index)}
-                        className="flex items-center px-2 py-1"
-                      >
-                        {getIconForBreadcrumb(item)}
-                        {item.text}
-                      </Button>
-                    </BreadcrumbItem>  
-                  </React.Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
+            {renderPythonStatus()}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="bg-blue-500 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white">
+                    v{versionNumber}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Version {versionNumber}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowWelcome(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <CircleUserRound size={18} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contact & Community</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={activeRuns > 0 ? handleViewRuns : undefined}
+                    className={`bg-green-500 history-button relative ${activeRuns === 0 ? 'cursor-not-allowed opacity-50' : ''}`}
+                    disabled={activeRuns === 0}
+                  >
+                    <Eye size={18} />
+                    {activeRuns > 0 && (
+                      <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                        {activeRuns}
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{activeRuns > 0 ? "View Runs" : "No Active Runs"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Toggle
+                    pressed={theme === 'dark'}
+                    onPressedChange={handleThemeToggle}
+                    aria-label="Toggle theme"
+                  >
+                    {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                  </Toggle>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-        <div className="header-option-panel">
-          {renderPythonStatus()}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="bg-blue-500 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white">
-                  v{versionNumber}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Version {versionNumber}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.electron.ipcRenderer.send('open-external', 'https://discord.gg/5KQkWApkYC')}
-                  className="flex items-center gap-2"
-                >
-                  <FontAwesomeIcon icon={faDiscord} size="lg" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Join the Surfer Community</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.electron.ipcRenderer.send('open-external', 'https://github.com/Surfer-Org/Protocol/tree/main/desktop')}
-                  className="flex items-center gap-2"
-                >
-                  <FontAwesomeIcon icon={faGithub} size="lg" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Contribute to Surfer</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={activeRuns > 0 ? handleViewRuns : undefined}
-                  className={`bg-green-500 history-button relative ${activeRuns === 0 ? 'cursor-not-allowed opacity-50' : ''}`}
-                  disabled={activeRuns === 0}
-                >
-                  <Eye size={18} />
-                  {activeRuns > 0 && (
-                    <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                      {activeRuns}
-                    </span>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{activeRuns > 0 ? "View Runs" : "No Active Runs"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Toggle
-                  pressed={theme === 'dark'}
-                  onPressedChange={handleThemeToggle}
-                  aria-label="Toggle theme"
-                >
-                  {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-                </Toggle>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-    </StyledSurferHeader>
+      </StyledSurferHeader>
+    </>
   );
 };

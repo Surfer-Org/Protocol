@@ -1,4 +1,4 @@
-# Surfer Protocol: An open-source framework for exporting and building applications off of your personal data
+# Surfer Protocol: An open-source framework for exporting your personal data
 
 > ### ⚠️ Looking for the Surfer Desktop App or the Surfer Python SDK?
 > Desktop App: [Surfer Desktop App](https://github.com/Surfer-Org/Protocol/blob/main/desktop/README.md)\
@@ -17,7 +17,7 @@
 
 ## What is Surfer Protocol?
 
-Surfer Protocol is an open-source framework for exporting and building applications off of your personal data.
+Surfer Protocol is an open-source framework for exporting your personal data.
 
 Your personal data is siloed across many platforms and apps. Big tech companies have no incentive to give you easy access to your own data. Whether you want to make an AI clone that texts like you, reclaim your data from big tech, or leave a digital legacy, Surfer Protocol is the way to do it.
 

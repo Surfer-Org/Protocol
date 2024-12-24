@@ -1,0 +1,50 @@
+export const metadata = {
+  title: 'Claude Model Context Protocol',
+  description:
+    'Connect your Surfer data to Claude using the Model Context Protocol.',
+}
+
+import Image from '@/components/Image'
+import claude_mcp from '@/images/claude-mcp.png'
+import finished_mcp from '@/images/claude_finished.png'
+
+### Claude Model Context Protocol (only works on macOS for now, check out this <a target="_blank" href="https://github.com/Surfer-Org/Protocol/issues/25">issue</a> for more details)
+
+<a target="_blank" href="https://github.com/Surfer-Org/Protocol/blob/main/surfer-mcp/README.md">Source code</a>
+
+<a target="_blank" href="https://modelcontextprotocol.io/introduction">More details from Anthropic</a>
+
+Connect your Surfer data to Claude using the Model Context Protocol.
+
+Step 1: Install or run the <a target="_blank" href="/desktop/installation">Surfer Desktop App</a> locally, connect your accounts, and export your data.
+
+Step 2: Install the <a target="_blank" href="https://claude.ai/download">Claude Desktop App</a>
+
+Step 3: Install <a target="_blank" href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>. This is recommended for managing model context protocol servers. More details can be found <a target="_blank" href="https://modelcontextprotocol.io/quickstart/server">here</a>.
+
+Step 4: If not already there, create a `claude_desktop_config.json` file in the app data folder of the Claude desktop app. 
+
+Mac Path: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+Windows Path: `C:/Users/[your-username]/AppData/Roaming/Claude/claude_desktop_config.json`
+
+Step 5: Add the following content to the file and save it:
+
+
+```json
+{
+  "mcpServers": {
+    "surfer-mcp": {
+      "command": "uvx",
+      "args": [
+        "surfer-mcp"
+      ]
+    }
+  }
+}
+```
+
+Step 6: Close the Claude Desktop app and run it again. If you see the following, you should be good to go!
+
+
+<Image src={finished_mcp} alt="Claude Model Context Protocol" />

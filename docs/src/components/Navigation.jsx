@@ -210,6 +210,12 @@ export const navigation = [
       { title: 'Platforms', href: '/desktop/platforms' },
     ],
   },
+  {
+    title: 'Claude',
+    links: [
+      { title: 'Model Context Protocol', href: '/claude' },
+    ],
+  },
 
   {
     title: 'SDK',

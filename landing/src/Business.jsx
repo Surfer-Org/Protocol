@@ -49,7 +49,7 @@ export default function Business() {
                               )}
                           </a>
                           <a target="_blank"
-                              href="https://github.com/Surfer-Org/Protocol"
+                              href="https://cal.com/sahil-lalani/30min"
                               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                               <Phone className="w-5 h-5 mr-2" />
                               Schedule a Call

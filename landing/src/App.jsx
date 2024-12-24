@@ -33,7 +33,7 @@ export default function App() {
             </div>
             
             {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-6">
+            <div className="hidden md:flex items-center space-x-8">
               <a href="https://sahillalani.substack.com" target="_blank" className="text-gray-200 hover:text-gray-300">
                 Blog
               </a>
@@ -53,10 +53,10 @@ export default function App() {
                 )}
               </a>
               <a target="_blank" 
-                href="https://docs.surferprotocol.org/#get-started" 
+                href="https://docs.surferprotocol.org/desktop/installation" 
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                 <Hammer className="w-5 h-5 mr-2" />
-                Start Building
+                Get started
               </a>
             </div>
 
@@ -103,12 +103,12 @@ export default function App() {
               </a>
               <hr />
               <a
-                href="https://docs.surferprotocol.org/#get-started"
+                href="https://docs.surferprotocol.org/desktop/installation"
                 target="_blank"
                 className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:text-white hover:bg-gray-700"
               >
                 <Hammer className="w-5 h-5 mr-2" />
-                Start Building
+                Get started
               </a>
             </div>
           </div>
@@ -122,19 +122,22 @@ export default function App() {
             <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
               <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
                 <div className="text-center w-full">
+                  <a className="cursor-pointer inline-flex items-center px-3 py-1 mb-4 rounded-full bg-blue-600/10 text-blue-500 text-md" href="https://docs.surferprotocol.org/claude" target="_blank">
+                    <span>✨ NEW: Connect Surfer to Claude using Model Context Protocol</span>
+                  </a>
                   <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl">
-                    <span className="block text-blue-600">Export and Build Apps with</span>
-                    <span className="block text-[#E5FCFF]">Your Personal Data</span>
+                    <span className="block text-blue-600">Export Your Personal Data</span>
+                    <span className="block text-[#E5FCFF]">With Surfer Protocol</span>
                   </h1>
                   <p className="mt-3 text-base text-gray-400 sm:mt-5 sm:text-lg sm:max-w-xl mx-auto md:mt-5 md:text-xl">
-                    Your personal data is siloed across many platforms. Take control back with Surfer Protocol - the open-source framework for exporting and building applications with your data.
+                    Your personal data is siloed across many platforms. Take control back with Surfer Protocol - the open-source framework for exporting your data.
                   </p>
                   <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row justify-center gap-3">
                     <div className="rounded-md shadow">
-                      <a target="_blank" href="https://docs.surferprotocol.org/#get-started" 
+                      <a target="_blank" href="https://docs.surferprotocol.org/desktop/installation" 
                          className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10">
                         <Hammer className="w-5 h-5 mr-2" />
-                        Start Building
+                        Get started
                       </a>
                     </div>
                   </div>
@@ -311,15 +314,15 @@ export default function App() {
       <div className="bg-blue-600">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            <span className="block">Ready to start building?</span>
+            <span className="block">Ready to Get started?</span>
             <span className="block text-blue-200">Get started with Surfer Protocol today.</span>
           </h2>
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
             <div className="inline-flex rounded-md shadow">
-              <a target="_blank" href="https://docs.surferprotocol.org/#get-started" 
+              <a target="_blank" href="https://docs.surferprotocol.org/desktop/installation" 
                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50">
                 <Hammer className="w-5 h-5 mr-2" />
-                Start Building
+                Get started
               </a>
             </div>
           </div>
