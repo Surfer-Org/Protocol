@@ -1,48 +1,29 @@
 # Claude MCP
 
-1. Download the Claude Desktop App from https://claude.ai/download
+1. Install the <a target="_blank" href="https://claude.ai/download">Claude Desktop App</a>
 
-2. If not already there, create a `claude_desktop_config.json` file in the app data folder of the Claude desktop app. The path for this on Mac is `~/Library/Application Support/Claude/claude_desktop_config.json`. And for Windows it is `C:/Users/username/AppData/Roaming/Claude/claude_desktop_config.json`.
+3. Install <a target="_blank" href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>. This is recommended for managing model context protocol servers. More details can be found <a target="_blank" href="https://modelcontextprotocol.io/quickstart/server">here</a>.
 
-3. Add the following content to the file:
+4. If not already there, create a `claude_desktop_config.json` file in the app data folder of the Claude desktop app. 
 
-Mac config:
+Mac Path: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-        "args": [
-          "-y",
-          "@modelcontextprotocol/server-filesystem",
-          "[insert-folder-path-of-your-choice-here]"
-        ]
-      }
-    }
-}
-```
+Windows Path: `C:/Users/[your-username]/AppData/Roaming/Claude/claude_desktop_config.json`
 
-Windows config:
+5. Add the following content to the file and save it:
+
 
 ```json
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "node",
+    "surfer-mcp": {
+      "command": "uvx",
       "args": [
-        "C:/Users/username/AppData/Roaming/npm/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
-        "[insert-folder-path-of-your-choice-here]"
+        "surfer-mcp"
       ]
     }
   }
 }
 ```
 
-**Note:** The path for the @modelcontextprotocol/server-filesystem package may vary based on your operating system. Look [here](https://github.com/modelcontextprotocol/servers/blob/main/src/filesystem/README.md) for more details.
-
-4. Restart the Claude Desktop App. You should see a plug and tool icon in the chat window:
-
-5. You should be able to ask Claude about your data from Surfer. For example, you can ask it to read all the data in the exported folder and tell you what it found.
-
-**Note:** Some files may be too large to read in full by Claude, so it may return an error for this. A solution is to implement a custom MCP server for Surfer that can read files in chunks or vectorize the data locally and expose that function to Claude. Check out the issue [here](https://github.com/Surfer-Org/Protocol/issues/15) for more details.
+6. Close the Claude Desktop app and run it again. If you see a plug and tool icon in the chat window, you should be good to go!
