@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the Surfer Protocol! We welcome c
 
 ## Types of Contributions
 
-- Adding new platforms in the desktop app and documentation (see [Guide to Adding New Platforms](ADD_PLATFORMS.md))
+- Adding new platforms in the desktop app and documentation (see [Guide to Adding New Platforms](desktop/ADD_PLATFORMS.md))
 - Building applications off of Surfer Protocol (see [Python SDK](sdk/python/README.md) and [Cookbook](cookbook/README.md))
 - Helping with the documentation website (see [Docs](docs/README.md))
 - General Bug Fixes
